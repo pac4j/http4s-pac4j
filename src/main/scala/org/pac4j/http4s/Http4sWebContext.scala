@@ -2,22 +2,59 @@ package org.pac4j.http4s
 
 import java.util
 
-import org.http4s.{AttributeKey, Header, Request, Response, Status, MediaType}
+import org.http4s.{AttributeKey, Charset, Header, MediaType, Request, Response, Status, UrlForm}
 import org.pac4j.core.context.session.SessionStore
 import org.pac4j.core.context.{Cookie, WebContext}
 import org.http4s.headers.`Content-Type`
+import org.pac4j.core.profile.CommonProfile
+import scalaz.{-\/, \/-}
+
 import scala.collection.JavaConverters._
 
 class Http4sWebContext(var request: Request, var response: Response) extends WebContext {
+  case class Pac4jUserProfiles(val pac4jUserProfiles: util.LinkedHashMap[String, CommonProfile])
+
+  val pac4jUserProfilesAttr: AttributeKey[Pac4jUserProfiles] = AttributeKey[Pac4jUserProfiles]
+
   override def getSessionStore: SessionStore[Http4sWebContext] = Http4sSessionStore
 
-  override def getRequestParameter(name: String): String = request.params.get(name).orNull
+  override def getRequestParameter(name: String): String = {
+    if (request.contentType.contains(`Content-Type`(MediaType.`application/x-www-form-urlencoded`))) {
+      println(s"getRequestParameter: Getting from Url Encoded Form name=$name")
+      UrlForm.decodeString(Charset.`UTF-8`)(getRequestContent) match {
+        case -\/(err) => throw new Exception(err.toString)
+        case \/-(urlForm) => urlForm.getFirstOrElse(name, request.params.get(name).orNull)
+      }
+    } else {
+      println(s"getRequestParameter: Getting from query params name=$name")
+      request.params.get(name).orNull
+    }
+  }
 
-  override def getRequestParameters: util.Map[String, Array[String]] = request.params.toSeq.map(a => (a._1, Array(a._2))).toMap.asJava
+  override def getRequestParameters: util.Map[String, Array[String]] = {
+    println(s"getRequestParameters")
+    request.params.toSeq.map(a => (a._1, Array(a._2))).toMap.asJava
+  }
 
-  override def getRequestAttribute(name: String): AnyRef = request.attributes
+  override def getRequestAttribute(name: String): AnyRef = {
+    println(s"getRequestAttribute: $name")
+    name match {
+      case "pac4jUserProfiles" =>
+        request.attributes.get(pac4jUserProfilesAttr).orNull
+      case _ =>
+        throw new NotImplementedError(s"getRequestAttribute for $name not implemented")
+    }
+  }
 
-  override def setRequestAttribute(name: String, value: Any): Unit = ??? //request.wi .attributes.put(AttributeKey()(name), value)
+  override def setRequestAttribute(name: String, value: Any): Unit = {
+    println(s"setRequestAttribute: $name = ${value.toString}")
+    request = name match {
+      case "pac4jUserProfiles" =>
+        request.withAttribute(pac4jUserProfilesAttr, Pac4jUserProfiles(value.asInstanceOf[util.LinkedHashMap[String, CommonProfile]]))
+      case _ =>
+        throw new NotImplementedError(s"setRequestAttribute for $name not implemented")
+    }
+  }
 
   override def getRequestHeader(name: String): String = request.headers.find(_.name == name).map(_.value).orNull
 
@@ -25,13 +62,30 @@ class Http4sWebContext(var request: Request, var response: Response) extends Web
 
   override def getRemoteAddr: String = request.remoteAddr.orNull
 
-  override def writeResponseContent(content: String): Unit = { response.withBody(content); () }
+  override def writeResponseContent(content: String): Unit = {
+    println("writeResponseContent !!!! TODO no unsafePerformSync! Set content")
+    val contentType = response.contentType
+    response = response.withBody(content).unsafePerformSync
+    // withBody overwrites the contentType to text/plain. Set it back to what it was before.
+    response = response.withContentType(contentType)
+    println(s"writeResponseContent After Response: ${response.toString()}")
+  }
 
-  override def setResponseStatus(code: Int): Unit = ??? //response.withStatus(Status(code))
+  override def setResponseStatus(code: Int): Unit = {
+    response = response.withStatus(Status.fromInt(code).getOrElse(Status.Ok))
+  }
 
-  override def setResponseHeader(name: String, value: String): Unit = response.putHeaders(Header(name, value))
+  override def setResponseHeader(name: String, value: String): Unit = {
+    println(s"setResponseHeader $name = $value")
+    response = response.putHeaders(Header(name, value))
+    println(s"setResponseHeader Response: ${response.toString()}")
+  }
 
-  override def setResponseContentType(content: String): Unit = ??? //response.withContentType(`Content-Type`. (MediaType.)
+  override def setResponseContentType(content: String): Unit = {
+    println("setResponseContentType TODO: Parse " + content)
+    response = response.withContentType(Some(`Content-Type`(MediaType.`text/html`, Some(Charset.`UTF-8`))))
+    println(s"setResponseContentType Response: ${response.toString()}")
+  }
 
   override def getServerName: String = request.serverAddr
 
@@ -48,4 +102,10 @@ class Http4sWebContext(var request: Request, var response: Response) extends Web
   override def addResponseCookie(cookie: Cookie): Unit = ???
 
   override def getPath: String = request.uri.path.toString
+
+  override def getRequestContent: String = {
+    request.bodyAsText.runLast.unsafePerformSync.orNull
+  }
+
+  override def getProtocol: String = request.uri.scheme.get.value
 }

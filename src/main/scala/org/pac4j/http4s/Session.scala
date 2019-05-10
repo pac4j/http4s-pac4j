@@ -18,7 +18,7 @@ import scalaz.OptionT
 import scalaz.Scalaz._
 import scalaz.concurrent.Task
 
-object Syntax {
+object SessionSyntax {
   implicit final class RequestOps(val v: Request) extends AnyVal {
     def session: Task[Option[Session]] =
       Task.now(v.attributes.get(Session.requestAttr))
@@ -50,6 +50,11 @@ object Syntax {
       val lf: Option[Session] => Option[Session] = _.cata(f.andThen(_.some), None)
       v.withAttribute(Session.responseAttr(v.attributes.get(Session.responseAttr).cata(_.andThen(lf), lf)))
     }
+
+//    def modifySession2(f: Option[Session] => Session): Response = {
+//      val lf: Option[Session] => Option[Session] = _.cata(f.andThen(_.some), None)
+//      v.withAttribute(Session.responseAttr(v.attributes.get(Session.responseAttr).cata(_.andThen(lf), lf)))
+//    }
 
     def newSession(session: Session): Response =
       v.withAttribute(Session.responseAttr(_ => Some(session)))
@@ -123,24 +128,41 @@ final case class SessionConfig(
   def check(cookie: Cookie): Task[Option[String]] =
     Task.delay {
       val now = new Date().getTime / 1000
-      cookie.content.split('-') match {
+      val r = cookie.content.split('-') match {
         case Array(signature, value) =>
-          for {
-            decrypted <- decrypt(value)
-            if constantTimeEquals(signature, sign(decrypted))
-            Array(expires, content) = decrypted.split("-", 2)
-            expiresSeconds <- Try(expires.toLong).toOption
-            if expiresSeconds > now
-          } yield content
+          decrypt(value).flatMap { decrypted =>
+            if (constantTimeEquals(signature, sign(decrypted))) {
+              val Array(expires, content) = decrypted.split("-", 2)
+              Try(expires.toLong).toOption.flatMap { expiresSeconds =>
+                if (expiresSeconds > now) {
+                  Some(content)
+                } else {
+                  println("Expired!!!")
+                  None
+                }
+              }
+            } else {
+              println("Failed constantTimeEquals")
+              None
+            }
+          }
+//          for {
+//            decrypted <- decrypt(value) if constantTimeEquals(signature, sign(decrypted))
+//            Array(expires, content) = decrypted.split("-", 2)
+//            expiresSeconds <- Try(expires.toLong).toOption if expiresSeconds > now
+//          } yield content
         case _ =>
+          println("Couldn't split on -")
           None
       }
+      println(s"################### Cookie check $r")
+      r
     }
 }
 
 object Session {
-  val requestAttr = AttributeKey[Session] //("com.github.hgiddens.http4s.session.Session")
-  val responseAttr = AttributeKey[Option[Session] => Option[Session]] //("com.github.hgiddens.http4s.session.Session")
+  val requestAttr = AttributeKey[Session]
+  val responseAttr = AttributeKey[Option[Session] => Option[Session]]
 
   private[this] def sessionAsCookie(config: SessionConfig, session: Session): Task[Cookie] =
     config.cookie(session.noSpaces)
@@ -160,26 +182,30 @@ object Session {
 
   def sessionManagement(config: SessionConfig): HttpMiddleware =
     Middleware { (request, service) =>
+      println(s"sessionManagement: starting for ${request.uri}: ${CookieHeader.from(request.headers)}")
       for {
-        requestSession <- sessionFromRequest(config, request)
-        requestWithSession = requestSession.cata(
+        sessionFromRequest <- sessionFromRequest(config, request)
+        requestWithSession = sessionFromRequest.cata(
           session => request.withAttribute(requestAttr, session),
           request
         )
         maybeResponse <- service(requestWithSession)
         responseWithSession = maybeResponse.cata( { response =>
           val updateSession = response.attributes.get(responseAttr) | identity
-          updateSession(requestSession).cata(
+          val finalResponse = updateSession(sessionFromRequest).cata(
             session => response.addCookie(sessionAsCookie2(config, session)),
-            if (requestSession.isDefined) response.removeCookie(config.cookieName) else response
+            if (sessionFromRequest.isDefined) response.removeCookie(config.cookieName) else response
           )
+          println(s"sessionManagement: finishing for ${request.uri}: ${CookieHeader.from(finalResponse.headers)}")
+          finalResponse
         }, Pass)
+        _ <- Task.now()
       } yield responseWithSession
     }
 
   def sessionRequired(fallback: Task[Response]): HttpMiddleware =
     Middleware { (request, service) =>
-      import Syntax._
+      import SessionSyntax._
       OptionT(request.session).flatMapF(_ => service(request)).getOrElseF(fallback)
     }
 }
