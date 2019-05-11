@@ -11,8 +11,8 @@ import scalaz.{-\/, \/-}
 
 import scala.collection.JavaConverters._
 
-class Http4sWebContext(var request: Request, var response: Response) extends WebContext {
-  case class Pac4jUserProfiles(val pac4jUserProfiles: util.LinkedHashMap[String, CommonProfile])
+class Http4sWebContext(private var request: Request, private var response: Response) extends WebContext {
+  case class Pac4jUserProfiles(pac4jUserProfiles: util.LinkedHashMap[String, CommonProfile])
 
   val pac4jUserProfilesAttr: AttributeKey[Pac4jUserProfiles] = AttributeKey[Pac4jUserProfiles]
 
@@ -108,4 +108,12 @@ class Http4sWebContext(var request: Request, var response: Response) extends Web
   }
 
   override def getProtocol: String = request.uri.scheme.get.value
+
+  def modifyResponse(f: Response => Response): Unit = {
+    response = f(response)
+  }
+
+  def getRequest: Request = request
+
+  def getResponse: Response = response
 }

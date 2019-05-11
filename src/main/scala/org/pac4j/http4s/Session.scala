@@ -51,10 +51,13 @@ object SessionSyntax {
       v.withAttribute(Session.responseAttr(v.attributes.get(Session.responseAttr).cata(_.andThen(lf), lf)))
     }
 
-//    def modifySession2(f: Option[Session] => Session): Response = {
-//      val lf: Option[Session] => Option[Session] = _.cata(f.andThen(_.some), None)
-//      v.withAttribute(Session.responseAttr(v.attributes.get(Session.responseAttr).cata(_.andThen(lf), lf)))
-//    }
+    def newOrModifySession(f: Option[Session] => Session): Response = {
+      val newUpdateFn: Option[Session] => Option[Session] = v.attributes.get(Session.responseAttr) match {
+        case Some(currentUpdateFn) => currentUpdateFn.andThen(f.andThen(_.some))
+        case None => f.andThen(_.some)
+      }
+      v.withAttribute(Session.responseAttr(newUpdateFn))
+    }
 
     def newSession(session: Session): Response =
       v.withAttribute(Session.responseAttr(_ => Some(session)))
@@ -199,7 +202,6 @@ object Session {
           println(s"sessionManagement: finishing for ${request.uri}: ${CookieHeader.from(finalResponse.headers)}")
           finalResponse
         }, Pass)
-        _ <- Task.now()
       } yield responseWithSession
     }
 

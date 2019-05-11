@@ -40,7 +40,7 @@ class CallbackService(config: Config) {
         this.multiProfile,
         this.renewSession,
         this.defaultClient)
-      webContext.response
+      webContext.getResponse
     }
   }
 }

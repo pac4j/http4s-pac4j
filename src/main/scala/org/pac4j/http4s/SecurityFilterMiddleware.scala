@@ -23,19 +23,21 @@ object SecurityFilterMiddleware {
   def securityFilter(config: Config): HttpMiddleware =
     Middleware { (request, service) =>
       println(s"securityFilter: ${request.uri}")
+
       // Is this wrong? executing the service before we have decided on the authorization?!
-      service(request).map { response =>
+      Response.notFound(request).map { response =>
         println("securityFilter: initial response: " + response.toString())
-        val responseWithSession = if (request.session2.isDefined) response.orNotFound else response.orNotFound.newSession(Json.fromJsonObject(JsonObject.empty))
+        val responseWithSession = response.orNotFound
         println("securityFilter: responseWithSession: " + responseWithSession.toString())
 
         val securityLogic = new DefaultSecurityLogic[Response, Http4sWebContext]
         val context = new Http4sWebContext(request, responseWithSession) //, config.getSessionStore)
 
+        // This gets called if user is granted access, proceed to real request
         val securityGrantedAccessAdapter = new SecurityGrantedAccessAdapter[Response, Http4sWebContext] {
           override def adapt(context: Http4sWebContext, profiles: util.Collection[CommonProfile], parameters: AnyRef*): Response = {
-            println("securityGrantedAccessAdapter: " + context.response.orNotFound.toString())
-            context.response //.withStatus(Ok)??
+            println("securityGrantedAccessAdapter: " + context.getResponse.orNotFound.toString())
+            service(request)
           }
         }
 

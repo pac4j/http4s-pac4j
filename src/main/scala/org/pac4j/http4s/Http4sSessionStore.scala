@@ -1,7 +1,7 @@
 package org.pac4j.http4s
 
 import java.io._
-import java.util.Base64
+import java.util.{Base64, UUID}
 import java.nio.charset.StandardCharsets.UTF_8
 
 import io.circe.{Json, JsonObject}
@@ -11,11 +11,11 @@ import org.pac4j.http4s.session.Session
 
 trait Http4sSessionStore extends SessionStore[Http4sWebContext] {
 
-  def getSession(context: Http4sWebContext): Option[Session] = context.request.session2
+  def getSession(context: Http4sWebContext): Option[Session] = context.getRequest.session2
 
   override def getOrCreateSessionId(context: Http4sWebContext): String = {
     println(s"Http4sSessionStore: getOrCreateSessionId")
-    "SessionId"
+    UUID.randomUUID().toString
   }
 
   override def get(context: Http4sWebContext, key: String): AnyRef = {
@@ -38,30 +38,34 @@ trait Http4sSessionStore extends SessionStore[Http4sWebContext] {
 
     println(s"Http4sSessionStore: Before: ${finalResponseSession(context)}")
 
-    // context needs a modifyResponse( r=> r) function?!
-    context.response = context.response.modifySession { s =>
-      Json.fromJsonObject(s.asObject.map { jsonObject =>
-        val newMap = if (value != null) {
-          jsonObject.toMap + (key -> Json.fromString(serialise(value)))
-        } else {
-          jsonObject.toMap - key
-        }
-        JsonObject.fromMap(newMap)
-      }.getOrElse(JsonObject.empty))
+    context.modifyResponse { r =>
+      r.newOrModifySession {
+        case Some(s) =>
+          Json.fromJsonObject(s.asObject.map { jsonObject =>
+            val newMap = if (value != null) {
+              jsonObject.toMap + (key -> Json.fromString(serialise(value)))
+            } else {
+              jsonObject.toMap - key
+            }
+            JsonObject.fromMap(newMap)
+          }.getOrElse(JsonObject.empty))
+        case None =>
+          Json.fromJsonObject(JsonObject.singleton(key, Json.fromString(serialise(value))))
+      }
     }
 
     println(s"Http4sSessionStore: After: ${finalResponseSession(context)}")
   }
 
   def finalResponseSession(context: Http4sWebContext): Option[Session] = {
-    val updateSession = context.response.attributes.get(Session.responseAttr).getOrElse( { os: Option[Session] => os } )
-    updateSession(context.request.attributes.get(Session.requestAttr))
+    val updateSession = context.getResponse.attributes.get(Session.responseAttr).getOrElse( { os: Option[Session] => os } )
+    updateSession(context.getRequest.attributes.get(Session.requestAttr))
   }
 
 
   override def destroySession(context: Http4sWebContext): Boolean = {
     println(s"Http4sSessionStore: destroySession")
-    context.response = context.response.clearSession
+    context.modifyResponse(r => r.clearSession)
     true
   }
 
