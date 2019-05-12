@@ -29,9 +29,8 @@ class CallbackService(config: Config) {
       println("!!!! Callback request session:")
       println(request)
       request.session2.foreach(println)
-      val responseWithSession = response //if (request.session2.isDefined) response else response.newSession(Json.fromJsonObject(JsonObject.empty))
 
-      val webContext = new Http4sWebContext(request, responseWithSession)
+      val webContext = new Http4sWebContext(request, response)
       callbackLogic.perform(webContext,
         config,
         config.getHttpActionAdapter.asInstanceOf[HttpActionAdapter[Response, Http4sWebContext]],
