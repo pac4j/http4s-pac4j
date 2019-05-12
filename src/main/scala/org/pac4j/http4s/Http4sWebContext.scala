@@ -2,10 +2,12 @@ package org.pac4j.http4s
 
 import java.util
 
-import org.http4s.{AttributeKey, Charset, Header, MediaType, Request, Response, Status, UrlForm}
+import org.http4s.{AttributeKey, Charset, Header, HttpDate, MediaType, Request, Response, Status, UrlForm}
 import org.pac4j.core.context.session.SessionStore
 import org.pac4j.core.context.{Cookie, WebContext}
 import org.http4s.headers.`Content-Type`
+import org.http4s.headers.{Cookie => CookieHeader}
+import org.http4s.util.NonEmptyList
 import org.pac4j.core.profile.CommonProfile
 import scalaz.{-\/, \/-}
 
@@ -97,9 +99,20 @@ class Http4sWebContext(private var request: Request, private var response: Respo
 
   override def getFullRequestURL: String = request.uri.toString()
 
-  override def getRequestCookies: util.Collection[Cookie] = ??? //request.h
+  override def getRequestCookies: util.Collection[Cookie] = {
+    val convertCookie = (c: org.http4s.Cookie) => new org.pac4j.core.context.Cookie(c.name, c.content)
+    val cookies = CookieHeader.from(request.headers).map(_.values.map(convertCookie))
+    cookies.map(_.list).getOrElse(Nil).asJavaCollection
+  }
 
-  override def addResponseCookie(cookie: Cookie): Unit = ???
+  override def addResponseCookie(cookie: Cookie): Unit = {
+    val expires = if (cookie.getMaxAge == -1) {
+      None
+    } else {
+      Some(HttpDate.unsafeFromEpochSecond(cookie.getMaxAge))
+    }
+    response = response.addCookie(cookie.getName, cookie.getValue, expires)
+  }
 
   override def getPath: String = request.uri.path.toString
 

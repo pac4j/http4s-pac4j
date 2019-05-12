@@ -29,7 +29,7 @@ class DemoConfigFactory extends ConfigFactory {
 
     val facebookClient = new FacebookClient("145278422258960", "be21409ba8f39b5dae2a7de525484da8")
 
-    val clients = new Clients("http://localhost:8080/callback", formClient())
+    val clients = new Clients("http://localhost:8080/callback", formClient(), facebookClient)
 
     val config = new Config(clients)
     //config.addAuthorizer("admin", new RequireAnyRoleAuthorizer[_ <: CommonProfile]("ROLE_ADMIN"))
