@@ -1,7 +1,7 @@
-package org.pac4j.http4s
+package org.pac4j
 
 import io.circe.Json
 
-package object session {
+package object http4s {
   type Session = Json
 }
