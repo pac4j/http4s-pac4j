@@ -10,6 +10,14 @@ import org.pac4j.http4s.SessionSyntax._
 import org.slf4j.LoggerFactory
 
 
+/**
+  * Http4sCookieSessionStore is session implementation based on cookies.
+  *
+  * All session data is kept in the client cookie (encrypted with the key
+  * specified in SessionConfig).
+  *
+  * @author Iain Cardnell
+  */
 trait Http4sCookieSessionStore extends SessionStore[Http4sWebContext] {
   private val logger = LoggerFactory.getLogger(this.getClass)
 

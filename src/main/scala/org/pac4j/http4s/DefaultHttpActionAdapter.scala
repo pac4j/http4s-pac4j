@@ -5,6 +5,11 @@ import org.pac4j.core.context.HttpConstants
 import org.pac4j.core.http.adapter.HttpActionAdapter
 import scalaz.concurrent.Task
 
+/**
+  * DefaultHttpActionAdapter sets the correct status codes on the response.
+  *
+  * @author Iain Cardnell
+  */
 object DefaultHttpActionAdapter extends HttpActionAdapter[Task[Response], Http4sWebContext] {
   override def adapt(code: Int, context: Http4sWebContext): Task[Response] = {
     Task.delay {

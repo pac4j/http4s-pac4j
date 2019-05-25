@@ -8,6 +8,17 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
 
+/**
+  * Http4sCacheSessionStore is an in memory session implementation.
+  *
+  * The cookie will just contain an id and the session data is kept server side
+  * in `cache`.
+  *
+  * Note that as `cache` is a simple Map, if multiple web servers are running
+  * sticky sessions will be required for this to work.
+  *
+  * @author Iain Cardnell
+  */
 class Http4sCacheSessionStore extends SessionStore[Http4sWebContext] {
   private val logger = LoggerFactory.getLogger(this.getClass)
 

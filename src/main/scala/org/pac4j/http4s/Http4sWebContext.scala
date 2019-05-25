@@ -15,6 +15,15 @@ import scalaz.{-\/, \/-}
 
 import scala.collection.JavaConverters._
 
+/**
+  * Http4sWebContext is the adapter layer to allow Pac4j to interact with
+  * Http4s request and response objects.
+  *
+  * @param request Http4s request object currently being handled
+  * @param sessionStore User session information
+  *
+  * @author Iain Cardnell
+  */
 class Http4sWebContext(private var request: Request, private val sessionStore: SessionStore[Http4sWebContext]) extends WebContext {
   private val logger = LoggerFactory.getLogger(this.getClass)
 

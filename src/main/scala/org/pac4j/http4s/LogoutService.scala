@@ -7,7 +7,9 @@ import org.pac4j.core.http.adapter.HttpActionAdapter
 import scalaz.concurrent.Task
 
 /**
-  * Http4s Service to handle callback from Id Provider
+  * Http4s Service to handle user logging out from the website
+  *
+  * @author Iain Cardnell
   */
 class LogoutService(config: Config,
                     defaultUrl: Option[String] = None,

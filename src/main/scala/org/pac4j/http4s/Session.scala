@@ -19,6 +19,15 @@ import scalaz.concurrent.Task
 import scala.concurrent.duration.Duration
 import scala.util.Try
 
+/*
+ * Cookie based sessions for http4s
+ *
+ * @author Hugh Giddens
+ * @author Iain Cardnell
+ */
+
+
+
 object SessionSyntax {
   implicit final class RequestOps(val v: Request) extends AnyVal {
     def session: Task[Option[Session]] =
@@ -66,13 +75,20 @@ object SessionSyntax {
 
 }
 
+/**
+  * Session Cookie Configuration
+  *
+  * @param cookieName
+  * @param mkCookie
+  * @param secret
+  * @param maxAge
+  */
 final case class SessionConfig(
   cookieName: String,
   mkCookie: (String, String) => Cookie,
   secret: String,
   maxAge: Duration
 ) {
-  // TODO: Type for this
   require(secret.length >= 16)
 
   def constantTimeEquals(a: String, b: String): Boolean =
@@ -90,8 +106,6 @@ final case class SessionConfig(
     new SecretKeySpec(secret.substring(0, 16).getBytes("UTF-8"), "AES")
 
   private[this] def encrypt(content: String): String = {
-    // akka-http-session pads content to guarantee it's non-empty
-    // we require maxAge so it can never be empty.
     val cipher = Cipher.getInstance("AES")
     cipher.init(Cipher.ENCRYPT_MODE, keySpec)
     DatatypeConverter.printHexBinary(cipher.doFinal(content.getBytes("UTF-8")))
