@@ -5,7 +5,7 @@ version      := "1.0.0-SNAPSHOT"
 
 val circeVersion = "0.9.3"
 val http4sVersion = "0.16.6a"
-val pac4jVersion = "3.6.1"
+val pac4jVersion = "3.8.3"
 val specs2Version = "3.8.9"
 
 libraryDependencies ++= Seq(
