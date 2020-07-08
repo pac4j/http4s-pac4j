@@ -21,7 +21,8 @@ import org.slf4j.LoggerFactory
 trait Http4sCookieSessionStore extends SessionStore[Http4sWebContext] {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  def getSession(context: Http4sWebContext): Option[Session] = context.getRequest.session2
+  def getSession(context: Http4sWebContext): Option[Session] =
+    context.getRequest.session
 
   override def getOrCreateSessionId(context: Http4sWebContext): String = {
     "pac4j"

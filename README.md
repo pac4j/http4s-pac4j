@@ -3,7 +3,14 @@
 </p>
 
 The `http4s-pac4j` project is an **easy and powerful security library for http4s web applications and web services** which supports authentication and authorization, but also logout and advanced features like session fixation and CSRF protection.
-It's based on Scala 2.12, Http4s 0.16 and on the **[pac4j security engine](https://github.com/pac4j/pac4j) v3**. It's available under the Apache 2 license.
+It's based on Scala 2.12, Http4s 0.21 and on the **[pac4j security engine](https://github.com/pac4j/pac4j) v3**. It's available under the Apache 2 license.
+
+Version dependencies:
+
+| http4s-pac4j | http4s | pac4j | scala |
+| ---          | ---    | ---   | ---   |
+| v1.*         | 0.16.* | v3    | 2.12  |
+| v2.*         | 0.21.* | v3    | 2.12  |
 
 [**Main concepts and components:**](http://www.pac4j.org/docs/main-concepts-and-components.html)
 
@@ -39,8 +46,9 @@ It's based on Scala 2.12, Http4s 0.16 and on the **[pac4j security engine](https
 
 ## Demo
 
-The demo webapp: [http4s-pac4j-demo](https://github.com/pac4j/http4s-pac4j-demo) is available for tests and implements many authentication mechanisms: Facebook, Twitter, form, basic auth, CAS, SAML, OpenID Connect, JWT...
-
+The demo webapp for http4s-pac4j:1.0.1: [http4s-pac4j-demo](https://github.com/pac4j/http4s-pac4j-demo)
+is available for tests and implements many authentication mechanisms: Facebook, Twitter, form, basic auth, CAS, SAML,
+OpenID Connect, JWT...
 
 ## Versions
 
