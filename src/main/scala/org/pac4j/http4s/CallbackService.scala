@@ -1,10 +1,10 @@
 package org.pac4j.http4s
 
+import cats.effect.IO
 import org.http4s.{Request, Response}
 import org.pac4j.core.config.Config
 import org.pac4j.core.engine.DefaultCallbackLogic
 import org.pac4j.core.http.adapter.HttpActionAdapter
-import scalaz.concurrent.Task
 
 /**
   * Http4s Service to handle callback from after login
@@ -22,12 +22,12 @@ class CallbackService(config: Config,
                       renewSession: Boolean = true,
                       defaultClient: Option[String] = None) {
 
-  def login(request: Request): Task[Response] = {
-    val callbackLogic = new DefaultCallbackLogic[Task[Response], Http4sWebContext]()
+  def login(request: Request[IO]): IO[Response[IO]] = {
+    val callbackLogic = new DefaultCallbackLogic[IO[Response[IO]], Http4sWebContext]()
     val webContext = Http4sWebContext(request, config)
     callbackLogic.perform(webContext,
       config,
-      config.getHttpActionAdapter.asInstanceOf[HttpActionAdapter[Task[Response], Http4sWebContext]],
+      config.getHttpActionAdapter.asInstanceOf[HttpActionAdapter[IO[Response[IO]], Http4sWebContext]],
       this.defaultUrl.orNull,
       this.saveInSession,
       this.multiProfile,
