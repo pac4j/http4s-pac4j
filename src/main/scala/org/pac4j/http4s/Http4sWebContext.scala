@@ -5,6 +5,7 @@ import java.util
 import cats.implicits._
 import cats.effect.{IO, SyncIO}
 import org.http4s._
+import org.http4s.implicits._
 import io.chrisdavenport.vault.Key
 import org.pac4j.core.context.session.SessionStore
 import org.pac4j.core.context.{Cookie, Pac4jConstants, WebContext}
@@ -85,7 +86,7 @@ class Http4sWebContext(
     }
   }
 
-  override def getRequestHeader(name: String): String = request.headers.find(_.name == name).map(_.value).orNull
+  override def getRequestHeader(name: String): String = request.headers.get(name.ci).map(_.value).orNull
 
   override def getRequestMethod: String = request.method.name
 
