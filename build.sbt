@@ -1,6 +1,6 @@
 scalaVersion := "2.12.11" // Also supports 2.11.x
 organization := "org.pac4j"
-version      := "1.0.0-SNAPSHOT"
+version      := "1.0.0"
 
 val circeVersion = "0.13.0"
 val http4sVersion = "0.21.6"
@@ -31,5 +31,32 @@ libraryDependencies ++= Seq(
   "org.specs2" %% "specs2-cats" % specs2Version,
 
 )
+
+credentials += Credentials(Path.userHome / ".sbt" / ".credentials")
+
+homepage := Some(url("https://github.com/pac4j/http4s-pac4j"))
+licenses := List("Apache 2" -> new URL("http://www.apache.org/licenses/LICENSE-2.0.txt"))
+scmInfo := Some(
+  ScmInfo(
+    url("https://github.com/pac4j/http4s-pac4j"),
+    "scm:git@github.com:pac4j/http4s-pac4j.git"
+  )
+)
+developers := List(
+  Developer(
+    id    = "leleuj",
+    name  = "Jerome LELEU",
+    email = "leleuj@gmail.com",
+    url   = url("https://github.com/leleuj")
+  )
+)
+
+pomIncludeRepository := { _ => false }
+publishTo := {
+  val nexus = "https://oss.sonatype.org/"
+  if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
+  else Some("releases" at nexus + "service/local/staging/deploy/maven2")
+}
+publishMavenStyle := true
 
 scalacOptions ++= Seq("-Ypartial-unification", "-language:implicitConversions", "-language:higherKinds")
