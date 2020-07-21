@@ -145,12 +145,24 @@ class Http4sWebContext(
 
   override def addResponseCookie(cookie: Cookie): Unit = {
     logger.debug("addResponseCookie")
-    val expires = if (cookie.getMaxAge == -1) {
-      None
-    } else {
-      Some(HttpDate.unsafeFromEpochSecond(cookie.getMaxAge))
-    }
-    val http4sCookie = ResponseCookie(cookie.getName, cookie.getValue, expires, path=Option(cookie.getPath))
+    val maxAge = Option(cookie.getMaxAge).filter(_ =!= -1).map(_.toLong)
+    val expires = Option(cookie.getExpiry)
+      .map(date => HttpDate.unsafeFromInstant(date.toInstant))
+
+    val http4sCookie = ResponseCookie(
+      name = cookie.getName,
+      content = cookie.getValue,
+      expires = expires,
+      maxAge = maxAge,
+      domain = Option(cookie.getDomain),
+      path = Option(cookie.getPath),
+      secure = cookie.isSecure,
+      httpOnly = cookie.isHttpOnly
+      // - `RequestCookie.sameSite` has no counterpart in `Cookie`;
+      // - `RequestCookie.extension` has no counterpart in `Cookie`;
+      // - `Cookie.getComment` can be passed via `extension`, but it's not worth
+      // the trouble.
+    )
     response = response.addCookie(http4sCookie)
   }
 
