@@ -2,6 +2,7 @@ package org.pac4j.http4s
 
 import java.util.UUID
 
+import org.http4s.HttpDate
 import org.pac4j.core.context.session.SessionStore
 import org.pac4j.core.context.{Cookie, Pac4jConstants}
 import org.slf4j.LoggerFactory
@@ -16,10 +17,23 @@ import scala.collection.JavaConverters._
   *
   * Note that as `cache` is a simple Map, if multiple web servers are running
   * sticky sessions will be required for this to work.
+  * @param maxAge `Max-Age` cookie attribute
+  * @param expires `Expires` cookie attribute
+  * @param domain `Domain` cookie attribute
+  * @param path `Path` cookie attribute
+  * @param secure `Secure` cookie attribute
+  * @param httpOnly `HttpOnly` cookie attribute
   *
   * @author Iain Cardnell
   */
-class Http4sCacheSessionStore extends SessionStore[Http4sWebContext] {
+class Http4sCacheSessionStore(
+  maxAge: Option[Int] = None,
+  expires: Option[HttpDate] = None,
+  domain: Option[String] = None,
+  path: Option[String] = Some("/"),
+  secure: Boolean = false,
+  httpOnly: Boolean = false
+) extends SessionStore[Http4sWebContext] {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   private val cache = scala.collection.mutable.Map[String, Map[String, AnyRef]]()
@@ -40,8 +54,17 @@ class Http4sCacheSessionStore extends SessionStore[Http4sWebContext] {
   def createSessionId(context: Http4sWebContext): String = {
     val id = UUID.randomUUID().toString
     context.setRequestAttribute(Pac4jConstants.SESSION_ID, id)
+
     val cookie = new Cookie(Pac4jConstants.SESSION_ID, id)
-    cookie.setPath("/")
+    maxAge.foreach(cookie.setMaxAge)
+    expires.foreach { httpDate =>
+      cookie.setExpiry(java.util.Date.from(httpDate.toInstant))
+    }
+    domain.foreach(cookie.setDomain)
+    path.foreach(cookie.setPath)
+    cookie.setSecure(secure)
+    cookie.setHttpOnly(httpOnly)
+
     context.addResponseCookie(cookie)
     id
   }
