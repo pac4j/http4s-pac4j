@@ -1,4 +1,4 @@
 language: scala
 
 script:
-  - sbt clean compile
+  - sbt clean +test

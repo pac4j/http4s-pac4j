@@ -22,7 +22,7 @@ import cats.data.NonEmptyList
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalacheck.Arbitrary.arbitrary
 import org.specs2.ScalaCheck
-import org.specs2.matcher.{Matcher, IOMatchers}
+import org.specs2.matcher.{Matcher, IOMatchers, TraversableMatchers}
 import org.specs2.mutable.Specification
 import org.specs2.concurrent.ExecutionEnv
 import mouse.option._
@@ -72,6 +72,10 @@ object Matchers {
 }
 
 class SessionSpec(val exEnv: ExecutionEnv) extends Specification with ScalaCheck with IOMatchers {
+
+  // A workaround for some weird overloading behavior with Scala 2.13.
+  import TraversableMatchers.{contain => contain0}
+
   implicit class ResponseCookieOps(c: ResponseCookie) {
     def toRequestCookie: RequestCookie = RequestCookie(c.name, c.content)
   }
@@ -126,7 +130,7 @@ class SessionSpec(val exEnv: ExecutionEnv) extends Specification with ScalaCheck
       "set a session cookie as per mkCookie" in prop { session: Session =>
         val request = Request[IO](Method.GET, uri"/create")
         sut(request).map(setCookies _) must
-          returnValue(contain(beCookieWithName(config.cookieName)))
+          returnValue(contain0(beCookieWithName(config.cookieName)))
       }
 
       "not include the session data in a readable form in the cookie" in {

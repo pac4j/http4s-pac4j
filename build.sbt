@@ -1,4 +1,4 @@
-scalaVersion := "2.12.11" // Also supports 2.11.x
+crossScalaVersions := Seq("2.12.12", "2.13.3")
 organization := "org.pac4j"
 version      := "1.0.1-SNAPSHOT"
 
@@ -59,4 +59,15 @@ publishTo := {
 }
 publishMavenStyle := true
 
-scalacOptions ++= Seq("-Ypartial-unification", "-language:implicitConversions", "-language:higherKinds")
+scalacOptions ++= {
+  val scalaVersion0 = scalaVersion.value
+  val partialUnification =
+    if (scalaVersion0.startsWith("2.12")) {
+      Seq("-Ypartial-unification")
+    } else Seq()
+
+  partialUnification ++ Seq(
+    "-language:implicitConversions",
+    "-language:higherKinds"
+  )
+}
