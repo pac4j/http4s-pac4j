@@ -66,4 +66,9 @@ If you have any questions, want to contribute or be notified about the new relea
 
 
 ## Credits
+
 Thanks to https://github.com/hgiddens/http4s-session for the Session implementation
+
+## Release process 
+
+`sbt +publish`
