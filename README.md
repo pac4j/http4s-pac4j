@@ -71,4 +71,4 @@ Thanks to https://github.com/hgiddens/http4s-session for the Session implementat
 
 ## Release process 
 
-`sbt +publish`
+`sbt +publishSigned`
