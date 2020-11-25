@@ -19,12 +19,12 @@ class LogoutService(config: Config,
                     localLogout: Boolean = true,
                     destroySession: Boolean = false,
                     centralLogout: Boolean = false)
-                   (implicit cs: ContextShift[IO], sync: Sync[IO]) {
+                   (implicit cs: ContextShift[IO]) {
 
   def logout(request: Request[IO]): IO[Response[IO]] = {
     val logoutLogic = new DefaultLogoutLogic[IO[Response[IO]], Http4sWebContext]()
     val webContext = Http4sWebContext(request, config)
-    blocker.delay(logoutLogic.perform(webContext,
+    blocker.delay[IO, IO[Response[IO]]](logoutLogic.perform(webContext,
       config,
       config.getHttpActionAdapter.asInstanceOf[HttpActionAdapter[IO[Response[IO]], Http4sWebContext]],
       this.defaultUrl.orNull,

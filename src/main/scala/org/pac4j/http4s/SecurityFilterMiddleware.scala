@@ -53,13 +53,13 @@ object SecurityFilterMiddleware {
         IO[Response[IO]],
         Http4sWebContext
       ] = new DefaultSecurityGrantedAccessAdapter(_)
-    )(implicit cs: ContextShift[IO], sync: Sync[IO]): HttpMiddleware[IO] =
+    )(implicit cs: ContextShift[IO]): HttpMiddleware[IO] =
     Middleware { (request, service) =>
       val securityLogic =
         new DefaultSecurityLogic[IO[Response[IO]], Http4sWebContext]
       val context = Http4sWebContext(request, config)
       OptionT.liftF(
-        blocker.delay(securityLogic.perform(
+        blocker.delay[IO, IO[Response[IO]]](securityLogic.perform(
           context,
           config,
           securityGrantedAccessAdapter(service),

@@ -23,12 +23,12 @@ class CallbackService(config: Config,
                       multiProfile: Boolean = false,
                       renewSession: Boolean = true,
                       defaultClient: Option[String] = None)
-                      (implicit cs: ContextShift[IO], sync: Sync[IO]){
+                      (implicit cs: ContextShift[IO]){
 
   def login(request: Request[IO]): IO[Response[IO]] = {
     val callbackLogic = new DefaultCallbackLogic[IO[Response[IO]], Http4sWebContext]()
     val webContext = Http4sWebContext(request, config)
-    blocker.delay(callbackLogic.perform(webContext,
+    blocker.delay[IO, IO[Response[IO]]](callbackLogic.perform(webContext,
       config,
       config.getHttpActionAdapter.asInstanceOf[HttpActionAdapter[IO[Response[IO]], Http4sWebContext]],
       this.defaultUrl.orNull,
