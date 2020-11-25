@@ -1,6 +1,7 @@
 package org.pac4j.http4s
 
-import cats.effect.IO
+import cats.implicits._
+import cats.effect._
 import org.http4s.{Response, _}
 import org.pac4j.core.config.Config
 import org.pac4j.core.engine.DefaultLogoutLogic
@@ -12,22 +13,24 @@ import org.pac4j.core.http.adapter.HttpActionAdapter
   * @author Iain Cardnell
   */
 class LogoutService(config: Config,
+                    blocker: Blocker,
                     defaultUrl: Option[String] = None,
                     logoutUrlPattern: Option[String] = None,
                     localLogout: Boolean = true,
                     destroySession: Boolean = false,
-                    centralLogout: Boolean = false) {
+                    centralLogout: Boolean = false)
+                   (implicit cs: ContextShift[IO]) {
 
   def logout(request: Request[IO]): IO[Response[IO]] = {
     val logoutLogic = new DefaultLogoutLogic[IO[Response[IO]], Http4sWebContext]()
     val webContext = Http4sWebContext(request, config)
-    logoutLogic.perform(webContext,
+    blocker.delay[IO, IO[Response[IO]]](logoutLogic.perform(webContext,
       config,
       config.getHttpActionAdapter.asInstanceOf[HttpActionAdapter[IO[Response[IO]], Http4sWebContext]],
       this.defaultUrl.orNull,
       this.logoutUrlPattern.orNull,
       this.localLogout,
       this.destroySession,
-      this.centralLogout)
+      this.centralLogout)).flatten
   }
 }

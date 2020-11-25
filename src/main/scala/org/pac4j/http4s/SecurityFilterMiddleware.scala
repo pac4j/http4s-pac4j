@@ -2,7 +2,8 @@ package org.pac4j.http4s
 
 import java.util
 
-import cats.effect.IO
+import cats.implicits._
+import cats.effect._
 import org.http4s.server.{HttpMiddleware, Middleware}
 import org.http4s.{HttpRoutes, Response}
 import org.http4s.implicits._
@@ -43,6 +44,7 @@ object SecurityFilterMiddleware {
 
   def securityFilter(
       config: Config,
+      blocker: Blocker,
       clients: Option[String] = None,
       authorizers: Option[String] = None,
       matchers: Option[String] = None,
@@ -51,13 +53,13 @@ object SecurityFilterMiddleware {
         IO[Response[IO]],
         Http4sWebContext
       ] = new DefaultSecurityGrantedAccessAdapter(_)
-  ): HttpMiddleware[IO] =
+    )(implicit cs: ContextShift[IO]): HttpMiddleware[IO] =
     Middleware { (request, service) =>
       val securityLogic =
         new DefaultSecurityLogic[IO[Response[IO]], Http4sWebContext]
       val context = Http4sWebContext(request, config)
       OptionT.liftF(
-        securityLogic.perform(
+        blocker.delay[IO, IO[Response[IO]]](securityLogic.perform(
           context,
           config,
           securityGrantedAccessAdapter(service),
@@ -68,6 +70,6 @@ object SecurityFilterMiddleware {
           matchers.orNull,
           multiProfile
         )
-      )
+      ).flatten)
     }
 }
