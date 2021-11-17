@@ -1,32 +1,29 @@
 package org.pac4j.http4s
 
-import cats.implicits._
+import cats.syntax.all._
 import cats.effect.IO
 import Generators._
 import Matchers._
 import SessionSyntax._
 import io.circe._
-import io.circe.jawn.CirceSupportParser.facade
 import io.circe.optics.all._
 import io.circe.syntax._
-import java.time.Instant
 
+import java.time.Instant
 import monocle.Monocle
 import monocle.Monocle._
 import org.http4s._
 import org.http4s.dsl.io._
-import org.http4s.headers.{`Content-Type`, `Set-Cookie`, Cookie => CookieHeader}
-import org.http4s.implicits._
 import org.http4s.circe._
 import cats.data.NonEmptyList
-import org.scalacheck.{Arbitrary, Gen}
+import org.scalacheck.Arbitrary
 import org.scalacheck.Arbitrary.arbitrary
 import org.specs2.ScalaCheck
-import org.specs2.matcher.{Matcher, IOMatchers, TraversableMatchers}
+import org.specs2.matcher.{IOMatchers, Matcher, TraversableMatchers}
 import org.specs2.mutable.Specification
 import org.specs2.concurrent.ExecutionEnv
 import mouse.option._
-import cats.data.OptionT
+import org.http4s.headers.Location
 
 import scala.concurrent.duration._
 
@@ -68,7 +65,7 @@ object Matchers {
     be_===(status) ^^ { (r: Response[IO]) => r.status }
 
   def haveBody[A](a: A)(implicit d: EntityDecoder[IO, A]): Matcher[Response[IO]] =
-    be_===(a) ^^ { (r: Response[IO]) => r.as[A].unsafeRunSync }
+    be_===(a) ^^ { (r: Response[IO]) => r.as[A].unsafeRunSync() }
 }
 
 class SessionSpec(val exEnv: ExecutionEnv) extends Specification with ScalaCheck with IOMatchers {
@@ -94,8 +91,8 @@ class SessionSpec(val exEnv: ExecutionEnv) extends Specification with ScalaCheck
 
   "session management" should {
     def sut: HttpApp[IO] =
-      Session.sessionManagement(config)(
-        HttpService {
+      Session.sessionManagement[IO](config).apply(
+        HttpRoutes.of[IO] {
           case GET -> Root / "id" =>
             Ok()
 
@@ -211,9 +208,9 @@ class SessionSpec(val exEnv: ExecutionEnv) extends Specification with ScalaCheck
   }
 
   "session required" should {
-    def fallback: IO[Response[IO]] = SeeOther(uri"/other")
+    def fallback: IO[Response[IO]] = SeeOther(Location(uri"/other"))
     def sut: HttpApp[IO] =
-      (Session.sessionManagement(config) compose Session.sessionRequired(fallback))(HttpService {
+      (Session.sessionManagement[IO](config) compose Session.sessionRequired[IO](fallback))(HttpRoutes.of[IO] {
         case GET -> Root =>
           Ok()
       }).orNotFound

@@ -1,11 +1,10 @@
 package org.pac4j.http4s
 
-import cats.implicits._
+import cats.syntax.flatMap._
 import cats.effect._
 import org.http4s.{Request, Response}
 import org.pac4j.core.config.Config
 import org.pac4j.core.engine.DefaultCallbackLogic
-import org.pac4j.core.http.adapter.HttpActionAdapter
 
 /**
   * Http4s Service to handle callback from after login
@@ -16,25 +15,23 @@ import org.pac4j.core.http.adapter.HttpActionAdapter
   *
   * @author Iain Cardnell
   */
-class CallbackService(config: Config,
-                      blocker: Blocker,
-                      defaultUrl: Option[String] = None,
-                      saveInSession: Boolean = true,
-                      multiProfile: Boolean = false,
-                      renewSession: Boolean = true,
-                      defaultClient: Option[String] = None)
-                      (implicit cs: ContextShift[IO]){
+class CallbackService[F[_]: Sync](config: Config,
+    blocker: Blocker,
+    contextBuilder: (Request[F], Config) => Http4sWebContext[F],
+    defaultUrl: Option[String] = None,
+    renewSession: Boolean = true,
+    defaultClient: Option[String] = None
+  )(implicit cs: ContextShift[F]){
 
-  def login(request: Request[IO]): IO[Response[IO]] = {
-    val callbackLogic = new DefaultCallbackLogic[IO[Response[IO]], Http4sWebContext]()
-    val webContext = Http4sWebContext(request, config)
-    blocker.delay[IO, IO[Response[IO]]](callbackLogic.perform(webContext,
+  def callback(request: Request[F]): F[Response[F]] = {
+    val callbackLogic = new DefaultCallbackLogic()
+    val webContext = contextBuilder(request, config)
+    blocker.delay[F, F[Response[F]]](callbackLogic.perform(webContext,
+      config.getSessionStore,
       config,
-      config.getHttpActionAdapter.asInstanceOf[HttpActionAdapter[IO[Response[IO]], Http4sWebContext]],
+      config.getHttpActionAdapter,
       this.defaultUrl.orNull,
-      this.saveInSession,
-      this.multiProfile,
       this.renewSession,
-      this.defaultClient.orNull)).flatten
+      this.defaultClient.orNull).asInstanceOf[F[Response[F]]]).flatten
   }
 }

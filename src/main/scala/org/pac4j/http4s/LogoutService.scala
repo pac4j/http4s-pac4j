@@ -1,36 +1,37 @@
 package org.pac4j.http4s
 
-import cats.implicits._
+import cats.syntax.flatMap._
 import cats.effect._
-import org.http4s.{Response, _}
+import org.http4s._
 import org.pac4j.core.config.Config
 import org.pac4j.core.engine.DefaultLogoutLogic
-import org.pac4j.core.http.adapter.HttpActionAdapter
 
 /**
   * Http4s Service to handle user logging out from the website
   *
   * @author Iain Cardnell
   */
-class LogoutService(config: Config,
-                    blocker: Blocker,
-                    defaultUrl: Option[String] = None,
-                    logoutUrlPattern: Option[String] = None,
-                    localLogout: Boolean = true,
-                    destroySession: Boolean = false,
-                    centralLogout: Boolean = false)
-                   (implicit cs: ContextShift[IO]) {
+class LogoutService[F[_]: Sync](config: Config,
+    blocker: Blocker,
+    contextBuilder: (Request[F], Config) => Http4sWebContext[F],
+    defaultUrl: Option[String] = None,
+    logoutUrlPattern: Option[String] = None,
+    localLogout: Boolean = true,
+    destroySession: Boolean = false,
+    centralLogout: Boolean = false
+  )(implicit cs: ContextShift[F]) {
 
-  def logout(request: Request[IO]): IO[Response[IO]] = {
-    val logoutLogic = new DefaultLogoutLogic[IO[Response[IO]], Http4sWebContext]()
-    val webContext = Http4sWebContext(request, config)
-    blocker.delay[IO, IO[Response[IO]]](logoutLogic.perform(webContext,
+  def logout(request: Request[F]): F[Response[F]] = {
+    val logoutLogic = new DefaultLogoutLogic()
+    val webContext = contextBuilder(request, config)
+    blocker.delay[F, F[Response[F]]](logoutLogic.perform(webContext,
+      config.getSessionStore,
       config,
-      config.getHttpActionAdapter.asInstanceOf[HttpActionAdapter[IO[Response[IO]], Http4sWebContext]],
+      config.getHttpActionAdapter,
       this.defaultUrl.orNull,
       this.logoutUrlPattern.orNull,
       this.localLogout,
       this.destroySession,
-      this.centralLogout)).flatten
+      this.centralLogout).asInstanceOf[F[Response[F]]]).flatten
   }
 }

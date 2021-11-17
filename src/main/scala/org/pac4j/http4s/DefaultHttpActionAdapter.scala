@@ -1,8 +1,9 @@
 package org.pac4j.http4s
 
-import cats.effect.IO
-import org.http4s.{Response, Status}
-import org.pac4j.core.context.HttpConstants
+import cats.effect.Sync
+import org.http4s.Status
+import org.pac4j.core.context.{HttpConstants, WebContext}
+import org.pac4j.core.exception.http.{FoundAction, HttpAction, SeeOtherAction}
 import org.pac4j.core.http.adapter.HttpActionAdapter
 
 /**
@@ -10,17 +11,24 @@ import org.pac4j.core.http.adapter.HttpActionAdapter
   *
   * @author Iain Cardnell
   */
-object DefaultHttpActionAdapter extends HttpActionAdapter[IO[Response[IO]], Http4sWebContext] {
-  override def adapt(code: Int, context: Http4sWebContext): IO[Response[IO]] = {
-    IO.delay {
-      code match {
-        case HttpConstants.UNAUTHORIZED => context.setResponseStatus(Status.Unauthorized.code)
-        case HttpConstants.FORBIDDEN => context.setResponseStatus(Status.Forbidden.code)
-        case HttpConstants.OK => context.setResponseStatus(Status.Ok.code)
-        case HttpConstants.NO_CONTENT => context.setResponseStatus(Status.NoContent.code)
-        case HttpConstants.TEMP_REDIRECT => context.setResponseStatus(Status.Found.code)
+class DefaultHttpActionAdapter[F[_] <: AnyRef : Sync] extends HttpActionAdapter {
+  override def adapt(action: HttpAction, context: WebContext): AnyRef =
+    Sync[F].delay {
+      val hContext = context.asInstanceOf[Http4sWebContext[F]]
+      action match {
+        case fa: FoundAction =>
+          hContext.setResponseStatus(Status.Found.code)
+          hContext.setResponseHeader("Location", fa.getLocation)
+        case sa: SeeOtherAction =>
+          hContext.setResponseStatus(Status.Found.code)
+          hContext.setResponseHeader("Location", sa.getLocation)
+        case a => a.getCode match {
+          case HttpConstants.UNAUTHORIZED => hContext.setResponseStatus(Status.Unauthorized.code)
+          case HttpConstants.FORBIDDEN => hContext.setResponseStatus(Status.Forbidden.code)
+          case HttpConstants.OK => hContext.setResponseStatus(Status.Ok.code)
+          case HttpConstants.NO_CONTENT => hContext.setResponseStatus(Status.NoContent.code)
+        }
       }
-      context.getResponse
+      hContext.getResponse
     }
-  }
 }

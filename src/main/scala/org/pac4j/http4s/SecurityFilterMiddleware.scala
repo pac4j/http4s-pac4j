@@ -1,21 +1,20 @@
 package org.pac4j.http4s
 
 import java.util
-
-import cats.implicits._
 import cats.effect._
-import org.http4s.server.{HttpMiddleware, Middleware}
-import org.http4s.{HttpRoutes, Response}
-
-import cats.effect.IO
+import cats.syntax.flatMap._
+import org.http4s.{AuthedRoutes, ContextRequest, Request, Response}
 import org.http4s.server.AuthMiddleware
-import org.http4s.{AuthedRoutes, ContextRequest, Response}
 import org.http4s.implicits._
 import org.pac4j.core.config.Config
 import org.pac4j.core.engine.{DefaultSecurityLogic, SecurityGrantedAccessAdapter}
-import org.pac4j.core.http.adapter.HttpActionAdapter
-import org.pac4j.core.profile.CommonProfile
+import org.pac4j.core.profile.{CommonProfile, UserProfile}
 import cats.data.{Kleisli, OptionT}
+import org.pac4j.core.context.WebContext
+import org.pac4j.core.context.session.SessionStore
+import org.pac4j.http4s
+
+import scala.collection.JavaConverters._
 
 /**
   * DefaultSecurityGrantedAccessAdapter gets called if user is granted access
@@ -24,15 +23,13 @@ import cats.data.{Kleisli, OptionT}
   *
   * @param service The http4s route that is being protected
   */
-class DefaultSecurityGrantedAccessAdapter(service: AuthedRoutes[util.Collection[CommonProfile], IO])
-    extends SecurityGrantedAccessAdapter[IO[Response[IO]], Http4sWebContext] {
-  override def adapt(
-      context: Http4sWebContext,
-      profiles: util.Collection[CommonProfile],
-      parameters: AnyRef*
-  ): IO[Response[IO]] = {
-    service.orNotFound(ContextRequest(profiles, context.getRequest))
-  }
+class DefaultSecurityGrantedAccessAdapter[F[_] <: AnyRef : Sync](service: AuthedRoutes[List[CommonProfile], F])
+    extends SecurityGrantedAccessAdapter {
+
+  override def adapt(context: WebContext, sessionStore: SessionStore, profiles: util.Collection[UserProfile], parameters: AnyRef*): AnyRef =
+    service.orNotFound(
+      ContextRequest[F, List[CommonProfile]](profiles.asScala.toList.map(_.asInstanceOf[CommonProfile]), context.asInstanceOf[http4s.Http4sWebContext[F]].getRequest)
+    )
 }
 
 /**
@@ -42,35 +39,45 @@ class DefaultSecurityGrantedAccessAdapter(service: AuthedRoutes[util.Collection[
   * @author Iain Cardnell
   */
 object SecurityFilterMiddleware {
-  def securityFilter(
+
+  def defaultSecurityGrantedAccessAdapter[F[_] <: AnyRef : Sync]: AuthedRoutes[List[CommonProfile], F] => SecurityGrantedAccessAdapter =
+    (a: AuthedRoutes[List[CommonProfile], F]) => new DefaultSecurityGrantedAccessAdapter[F](a)
+
+  def securityFilter[F[_] <: AnyRef : Sync](
       config: Config,
       blocker: Blocker,
+      contextBuilder: (Request[F], Config) => Http4sWebContext[F],
       clients: Option[String] = None,
       authorizers: Option[String] = None,
-      matchers: Option[String] = None,
-      multiProfile: Boolean = false,
-      securityGrantedAccessAdapter: AuthedRoutes[util.Collection[CommonProfile], IO] => SecurityGrantedAccessAdapter[
-        IO[Response[IO]],
-        Http4sWebContext
-      ] = new DefaultSecurityGrantedAccessAdapter(_)
-  )(implicit cs: ContextShift[IO]): AuthMiddleware[IO, util.Collection[CommonProfile]] =
+      matchers: Option[String] = None
+  )(implicit cs: ContextShift[F]): AuthMiddleware[F, List[CommonProfile]] =
+    securityFilter(config, blocker, contextBuilder, clients, authorizers, matchers, defaultSecurityGrantedAccessAdapter[F])
+
+  def securityFilter[F[_] : Sync](
+      config: Config,
+      blocker: Blocker,
+      contextBuilder: (Request[F], Config) => Http4sWebContext[F],
+      clients: Option[String],
+      authorizers: Option[String],
+      matchers: Option[String],
+      securityGrantedAccessAdapter: AuthedRoutes[List[CommonProfile], F] => SecurityGrantedAccessAdapter
+  )(implicit cs: ContextShift[F]): AuthMiddleware[F, List[CommonProfile]] =
     service =>
       Kleisli(request => {
         val securityLogic =
-          new DefaultSecurityLogic[IO[Response[IO]], Http4sWebContext]
-        val context = Http4sWebContext(request, config)
+          new DefaultSecurityLogic
+        val context = contextBuilder(request, config)
         OptionT.liftF(
-          blocker.delay[IO, IO[Response[IO]]](securityLogic.perform(
+          blocker.delay[F, F[Response[F]]](securityLogic.perform(
             context,
+            config.getSessionStore,
             config,
             securityGrantedAccessAdapter(service),
-            config.getHttpActionAdapter
-              .asInstanceOf[HttpActionAdapter[IO[Response[IO]], Http4sWebContext]],
+            config.getHttpActionAdapter,
             clients.orNull,
             authorizers.orNull,
-            matchers.orNull,
-            multiProfile
-          )).flatten
+            matchers.orNull
+          ).asInstanceOf[F[Response[F]]]).flatten
         )
       }
     )

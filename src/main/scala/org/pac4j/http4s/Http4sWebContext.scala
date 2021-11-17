@@ -1,22 +1,23 @@
 package org.pac4j.http4s
 
 import java.util
-
-import cats.implicits._
-import cats.effect.{IO, SyncIO}
+import cats.effect.{IO, Sync, SyncEffect, SyncIO}
+import cats.syntax.eq._
 import org.http4s._
-import org.http4s.implicits._
-import io.chrisdavenport.vault.Key
 import org.pac4j.core.context.session.SessionStore
-import org.pac4j.core.context.{Cookie, Pac4jConstants, WebContext}
+import org.pac4j.core.context.{Cookie, WebContext}
 import org.http4s.headers.`Content-Type`
-import org.http4s.headers.{Cookie => CookieHeader}
 import org.pac4j.core.config.Config
 import org.pac4j.core.profile.CommonProfile
 import org.slf4j.LoggerFactory
 import fs2.Collector
+import org.http4s.Header.Raw
+import org.pac4j.core.util.Pac4jConstants
+import org.typelevel.ci.CIString
+import org.typelevel.vault.Key
 
-import scala.collection.JavaConverters._
+import java.util.Optional
+import scala.jdk.CollectionConverters._
 
 /**
   * Http4sWebContext is the adapter layer to allow Pac4j to interact with
@@ -27,33 +28,38 @@ import scala.collection.JavaConverters._
   *
   * @author Iain Cardnell
   */
-class Http4sWebContext(
-    private var request: Request[IO],
-    private val sessionStore: SessionStore[Http4sWebContext],
+class Http4sWebContext[F[_]: Sync](
+    private var request: Request[F],
+    private val sessionStore: SessionStore,
+    private val bodyExtractor: F[String] => String,
   ) extends WebContext {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  private var response: Response[IO] = Response()
+  private var response: Response[F] = Response()
 
   case class Pac4jUserProfiles(pac4jUserProfiles: util.LinkedHashMap[String, CommonProfile])
 
   val pac4jUserProfilesAttr: Key[Pac4jUserProfiles] =
-    Key.newKey[SyncIO, Pac4jUserProfiles].unsafeRunSync
+    Key.newKey[SyncIO, Pac4jUserProfiles].unsafeRunSync()
   val sessionIdAttr: Key[String] =
-    Key.newKey[SyncIO, String].unsafeRunSync
+    Key.newKey[SyncIO, String].unsafeRunSync()
+  val pac4jCsrfTokenAttr: Key[String] =
+    Key.newKey[SyncIO, String].unsafeRunSync()
+  val pac4jPreviousCsrfTokenAttr: Key[String] =
+    Key.newKey[SyncIO, String].unsafeRunSync()
+  val otherPac4jAttr: Key[Map[String, String]] =
+    Key.newKey[SyncIO, Map[String, String]].unsafeRunSync()
 
-  override def getSessionStore: SessionStore[Http4sWebContext] = sessionStore
-
-  override def getRequestParameter(name: String): String = {
+  override def getRequestParameter(name: String): Optional[String] = {
     if (request.contentType.contains(`Content-Type`(MediaType.application.`x-www-form-urlencoded`))) {
       logger.debug(s"getRequestParameter: Getting from Url Encoded Form name=$name")
       UrlForm.decodeString(Charset.`UTF-8`)(getRequestContent) match {
         case Left(err) => throw new Exception(err.toString)
-        case Right(urlForm) => urlForm.getFirstOrElse(name, request.params.get(name).orNull)
+        case Right(urlForm) => Optional.ofNullable(urlForm.getFirstOrElse(name, request.params.get(name).orNull))
       }
     } else {
       logger.debug(s"getRequestParameter: Getting from query params name=$name")
-      request.params.get(name).orNull
+      Optional.ofNullable(request.params.get(name).orNull)
     }
   }
 
@@ -62,59 +68,49 @@ class Http4sWebContext(
     request.params.toSeq.map(a => (a._1, Array(a._2))).toMap.asJava
   }
 
-  override def getRequestAttribute(name: String): AnyRef = {
+  override def getRequestAttribute(name: String): Optional[AnyRef] = {
     logger.debug(s"getRequestAttribute: $name")
     name match {
-      case "pac4jUserProfiles" =>
-        request.attributes.lookup(pac4jUserProfilesAttr).orNull
+      case Pac4jConstants.USER_PROFILES =>
+        Optional.ofNullable(request.attributes.lookup(pac4jUserProfilesAttr).orNull)
       case Pac4jConstants.SESSION_ID =>
-        request.attributes.lookup(sessionIdAttr).orNull
-      case _ =>
-        throw new NotImplementedError(s"getRequestAttribute for $name not implemented")
+        Optional.ofNullable(request.attributes.lookup(sessionIdAttr).orNull)
+      case Pac4jConstants.CSRF_TOKEN =>
+        Optional.ofNullable(request.attributes.lookup(pac4jCsrfTokenAttr).orNull)
+      case Pac4jConstants.PREVIOUS_CSRF_TOKEN =>
+        Optional.ofNullable(request.attributes.lookup(pac4jPreviousCsrfTokenAttr).orNull)
+      case other =>
+        Optional.ofNullable(request.attributes.lookup(otherPac4jAttr).flatMap(_.get(other)).orNull)
     }
   }
 
   override def setRequestAttribute(name: String, value: Any): Unit = {
     logger.debug(s"setRequestAttribute: $name")
     request = name match {
-      case "pac4jUserProfiles" =>
+      case Pac4jConstants.USER_PROFILES =>
         request.withAttribute(pac4jUserProfilesAttr, Pac4jUserProfiles(value.asInstanceOf[util.LinkedHashMap[String, CommonProfile]]))
       case Pac4jConstants.SESSION_ID =>
         request.withAttribute(sessionIdAttr, value.asInstanceOf[String])
-      case _ =>
-        throw new NotImplementedError(s"setRequestAttribute for $name not implemented")
+      case Pac4jConstants.CSRF_TOKEN =>
+        request.withAttribute(pac4jCsrfTokenAttr, value.asInstanceOf[String])
+      case Pac4jConstants.PREVIOUS_CSRF_TOKEN =>
+        request.withAttribute(pac4jPreviousCsrfTokenAttr, value.asInstanceOf[String])
+      case other =>
+        val old = request.attributes.lookup(otherPac4jAttr).getOrElse(Map.empty[String, String])
+        request.withAttribute(otherPac4jAttr, old + (other -> value.asInstanceOf[String]))
     }
   }
 
-  override def getRequestHeader(name: String): String = request.headers.get(name.ci).map(_.value).orNull
+  override def getRequestHeader(name: String): Optional[String] = Optional.ofNullable(request.headers.get(CIString(name)).map(_.head.value).orNull)
 
   override def getRequestMethod: String = request.method.name
 
-  override def getRemoteAddr: String = request.remoteAddr.orNull
-
-  override def writeResponseContent(content: String): Unit = {
-    logger.debug("writeResponseContent")
-    val contentType = response.contentType
-    modifyResponse{ rsp => contentType.fold(
-        rsp.withEntity(content)
-      )(
-        // withBody overwrites the contentType to text/plain. Set it back to what it was before.
-        rsp.withEntity(content).withContentType(_)
-      )
-    }
-  }
-
-  override def setResponseStatus(code: Int): Unit = {
-    logger.debug(s"setResponseStatus $code")
-    modifyResponse { r =>
-      r.withStatus(Status.fromInt(code).getOrElse(Status.Ok))
-    }
-  }
+  override def getRemoteAddr: String = request.remoteAddr.map(_.toInetAddress.getHostName).orNull
 
   override def setResponseHeader(name: String, value: String): Unit = {
     logger.debug(s"setResponseHeader $name = $value")
     modifyResponse { r =>
-      r.putHeaders(Header(name, value))
+      r.putHeaders(Raw(CIString(name), value))
     }
   }
 
@@ -126,9 +122,9 @@ class Http4sWebContext(
     }
   }
 
-  override def getServerName: String = request.serverAddr
+  override def getServerName: String = request.serverAddr.map(_.toInetAddress.getHostName).orNull
 
-  override def getServerPort: Int = request.serverPort
+  override def getServerPort: Int = request.serverPort.map(_.value).getOrElse(0)
 
   override def getScheme: String = request.uri.scheme.map(_.value).orNull
 
@@ -146,13 +142,10 @@ class Http4sWebContext(
   override def addResponseCookie(cookie: Cookie): Unit = {
     logger.debug("addResponseCookie")
     val maxAge = Option(cookie.getMaxAge).filter(_ =!= -1).map(_.toLong)
-    val expires = Option(cookie.getExpiry)
-      .map(date => HttpDate.unsafeFromInstant(date.toInstant))
 
     val http4sCookie = ResponseCookie(
       name = cookie.getName,
       content = cookie.getValue,
-      expires = expires,
       maxAge = maxAge,
       domain = Option(cookie.getDomain),
       path = Option(cookie.getPath),
@@ -173,22 +166,35 @@ class Http4sWebContext(
 
   override def getPath: String = request.uri.path.toString
 
-  override def getRequestContent: String = {
-    request.bodyText.compile.to(Collector.string).unsafeRunSync
-  }
+  override def getRequestContent: String =
+    bodyExtractor(request.bodyText.compile.to(Collector.string))
 
   override def getProtocol: String = request.uri.scheme.get.value
 
-  def modifyResponse(f: Response[IO] => Response[IO]): Unit = {
+  def setResponseStatus(code: Int): Unit = {
+    logger.debug(s"setResponseStatus $code")
+    modifyResponse { r =>
+      r.withStatus(Status.fromInt(code).getOrElse(Status.Ok))
+    }
+  }
+
+  def modifyResponse(f: Response[F] => Response[F]): Unit = {
     response = f(response)
   }
 
-  def getRequest: Request[IO] = request
+  def getRequest: Request[F] = request
 
-  def getResponse: Response[IO] = response
+  def getResponse: Response[F] = response
+
+  override def getResponseHeader(name: String): Optional[String] =
+    Optional.ofNullable(response.headers.get(CIString(name)).map(_.head.value).orNull)
 }
 
 object Http4sWebContext {
-  def apply(request: Request[IO], config: Config) =
-    new Http4sWebContext(request, config.getSessionStore.asInstanceOf[SessionStore[Http4sWebContext]])
+
+  def ioInstance(request: Request[IO], config: Config) =
+    new Http4sWebContext[IO](request, config.getSessionStore, _.unsafeRunSync())
+
+  def syncEffectInstance[F[_] : SyncEffect](request: Request[F], config: Config) =
+    new Http4sWebContext[F](request, config.getSessionStore, SyncEffect[F].runSync[IO, String](_).unsafeRunSync())
 }

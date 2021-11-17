@@ -1,10 +1,11 @@
 package org.pac4j.http4s
 
-import java.util.UUID
+import cats.effect.Sync
 
-import org.http4s.HttpDate
+import java.util.{Optional, UUID}
 import org.pac4j.core.context.session.SessionStore
-import org.pac4j.core.context.{Cookie, Pac4jConstants}
+import org.pac4j.core.context.{Cookie, WebContext}
+import org.pac4j.core.util.Pac4jConstants
 import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
@@ -26,40 +27,36 @@ import scala.collection.JavaConverters._
   *
   * @author Iain Cardnell
   */
-class Http4sCacheSessionStore(
+class Http4sCacheSessionStore[F[_] : Sync](
   maxAge: Option[Int] = None,
-  expires: Option[HttpDate] = None,
   domain: Option[String] = None,
   path: Option[String] = Some("/"),
   secure: Boolean = false,
   httpOnly: Boolean = false
-) extends SessionStore[Http4sWebContext] {
+) extends SessionStore {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   private val cache = scala.collection.mutable.Map[String, Map[String, AnyRef]]()
 
-  override def getOrCreateSessionId(context: Http4sWebContext): String = {
-    val id = Option(context.getRequestAttribute(Pac4jConstants.SESSION_ID)) match {
+  override def getSessionId(context: WebContext, createSession: Boolean): Optional[String] = {
+    val id = Option(context.getRequestAttribute(Pac4jConstants.SESSION_ID).asInstanceOf[Optional[AnyRef]].orElse(null)) match {
       case Some(sessionId) => sessionId.toString
       case None =>
         context.getRequestCookies.asScala.find(_.getName == Pac4jConstants.SESSION_ID) match {
           case Some(cookie) => cookie.getValue
-          case None => createSessionId(context)
+          case None => createSessionId(context.asInstanceOf[Http4sWebContext[F]])
         }
     }
     logger.debug(s"getOrCreateSessionId - $id")
-    id
+    Optional.ofNullable(id)
   }
 
-  def createSessionId(context: Http4sWebContext): String = {
+  private def createSessionId(context: Http4sWebContext[F]): String = {
     val id = UUID.randomUUID().toString
     context.setRequestAttribute(Pac4jConstants.SESSION_ID, id)
 
     val cookie = new Cookie(Pac4jConstants.SESSION_ID, id)
     maxAge.foreach(cookie.setMaxAge)
-    expires.foreach { httpDate =>
-      cookie.setExpiry(java.util.Date.from(httpDate.toInstant))
-    }
     domain.foreach(cookie.setDomain)
     path.foreach(cookie.setPath)
     cookie.setSecure(secure)
@@ -69,16 +66,19 @@ class Http4sCacheSessionStore(
     id
   }
 
-  override def get(context: Http4sWebContext, key: String): AnyRef = {
-    val sessionId = getOrCreateSessionId(context)
-    val sessionMap = cache.getOrElseUpdate(sessionId, Map.empty)
-    val value = sessionMap.get(key).orNull
-    logger.debug(s"get sessionId: $sessionId key: $key")
-    value
+  override def get(context: WebContext, key: String): Optional[AnyRef] = {
+    val sessionId = getSessionId(context, false)
+    sessionId.map[AnyRef](sid => {
+        val sessionMap = cache.getOrElseUpdate(sid, Map.empty)
+        val value = sessionMap.get(key).orNull
+        logger.debug(s"get sessionId: $sessionId key: $key")
+        value
+      }
+    )
   }
 
-  override def set(context: Http4sWebContext, key: String, value: AnyRef): Unit = {
-    val sessionId = getOrCreateSessionId(context)
+  override def set(context: WebContext, key: String, value: AnyRef): Unit = {
+    val sessionId = getSessionId(context, true).get()
     logger.debug(s"set sessionId: $sessionId key: $key")
     val sessionMap = cache.getOrElseUpdate(sessionId, Map.empty)
     val newMap = if (value == null) {
@@ -89,36 +89,36 @@ class Http4sCacheSessionStore(
     cache.update(sessionId, newMap)
   }
 
-  override def destroySession(context: Http4sWebContext): Boolean = {
-    val sessionId = getOrCreateSessionId(context)
-    if (cache.contains(sessionId)) {
-      cache.remove(sessionId)
+  override def destroySession(context: WebContext): Boolean = {
+    val sessionId = getSessionId(context, false)
+    if (sessionId.isPresent && cache.contains(sessionId.get())) {
+      cache.remove(sessionId.get())
       context.setRequestAttribute(Pac4jConstants.SESSION_ID, null)
-      context.removeResponseCookie(Pac4jConstants.SESSION_ID)
+      context.asInstanceOf[Http4sWebContext[F]].removeResponseCookie(Pac4jConstants.SESSION_ID)
       true
     } else {
       false
     }
   }
 
-  override def getTrackableSession(context: Http4sWebContext): AnyRef = {
+  override def getTrackableSession(context: WebContext): Optional[AnyRef] = {
     logger.debug(s"getTrackableSession")
-    getOrCreateSessionId(context)
+    getSessionId(context, false).asInstanceOf[Optional[AnyRef]]
   }
 
-  override def buildFromTrackableSession(context: Http4sWebContext, trackableSession: Any): SessionStore[Http4sWebContext] = {
+  override def buildFromTrackableSession(context: WebContext, trackableSession: Any): Optional[SessionStore] = {
     context.setRequestAttribute(Pac4jConstants.SESSION_ID, trackableSession.toString)
-    this
+    Optional.of(this)
   }
 
-  override def renewSession(context: Http4sWebContext): Boolean = {
-    val oldSessionId = getOrCreateSessionId(context)
-    val oldData = cache.get(oldSessionId)
+  override def renewSession(context: WebContext): Boolean = {
+    val oldSessionId = getSessionId(context, false)
+    val oldData = oldSessionId.flatMap(sid => Optional.ofNullable(cache.get(sid).orNull))
 
     destroySession(context)
 
-    val newSessionId = createSessionId(context)
-    if (oldData.isDefined) {
+    val newSessionId = createSessionId(context.asInstanceOf[Http4sWebContext[F]])
+    if (oldData.isPresent) {
       cache.update(newSessionId, oldData.get)
     }
 
