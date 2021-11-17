@@ -1,15 +1,15 @@
-crossScalaVersions := Seq("2.12.12", "2.13.3")
+crossScalaVersions := Seq("2.12.15", "2.13.7", "3.1.0")
 organization := "org.pac4j"
-version      := "2.0.2-SNAPSHOT"
+version      := "3.0.0-SNAPSHOT"
 
-val circeVersion = "0.13.0"
-val http4sVersion = "0.21.6"
-val pac4jVersion = "3.9.0"
+val circeVersion = "0.14.1"
+val http4sVersion = "0.22.7"
+val pac4jVersion = "5.1.5"
 val specs2Version = "4.10.0"
-val catsVersion = "2.1.1"
-val catsEffectVersion = "2.1.3"
-val vaultVersion = "2.0.0"
-val mouseVersion = "0.25"
+val catsVersion = "2.6.1"
+//val catsEffectVersion = "2.1.3"
+val vaultVersion = "2.1.13"
+val mouseVersion = "1.0.7"
 
 libraryDependencies ++= Seq(
   "io.circe" %% "circe-core" % circeVersion,
@@ -21,16 +21,23 @@ libraryDependencies ++= Seq(
   "org.slf4j" % "slf4j-api" % "1.7.26",
   "commons-codec" % "commons-codec" % "1.14",
   "org.typelevel" %% "cats-core" % catsVersion,
-  "io.chrisdavenport" %% "vault" % vaultVersion,
+  "org.typelevel" %% "vault" % vaultVersion,
   "org.typelevel" %% "mouse" % mouseVersion,
-
-  "io.circe" %% "circe-optics" % circeVersion % Test,
-  "org.http4s" %% "http4s-jawn" % http4sVersion % Test,
-  "org.specs2" %% "specs2-matcher-extra" % specs2Version % Test,
-  "org.specs2" %% "specs2-scalacheck" % specs2Version % Test,
-  "org.specs2" %% "specs2-cats" % specs2Version,
-
+  "org.scala-lang.modules" %% "scala-collection-compat" % "2.6.0",
 )
+
+libraryDependencies ++= {
+  CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, _)) => Seq(
+      "io.circe" %% "circe-optics" % circeVersion % Test,
+      "org.http4s" %% "http4s-jawn" % http4sVersion % Test,
+      "org.specs2" %% "specs2-matcher-extra" % specs2Version % Test,
+      "org.specs2" %% "specs2-scalacheck" % specs2Version % Test,
+      "org.specs2" %% "specs2-cats" % specs2Version,
+    )
+    case _ => Seq()
+  }
+}
 
 credentials += Credentials(Path.userHome / ".sbt" / ".credentials")
 
@@ -67,6 +74,7 @@ scalacOptions ++= {
     } else Seq()
 
   partialUnification ++ Seq(
+    "-deprecation",
     "-language:implicitConversions",
     "-language:higherKinds"
   )

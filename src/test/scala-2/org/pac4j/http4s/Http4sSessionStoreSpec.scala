@@ -2,11 +2,11 @@ package org.pac4j.http4s
 
 import io.circe.{Json, JsonObject}
 import org.specs2.mutable.Specification
-import Http4sCookieSessionStore._
+import cats.effect.IO
 import io.circe.syntax._
 
 object Http4sCookieSessionStoreSpec extends Specification {
-  val store = new Http4sCookieSessionStore {}
+  val store = new Http4sCookieSessionStore[IO] {}
   import store._
 
   "get" should {

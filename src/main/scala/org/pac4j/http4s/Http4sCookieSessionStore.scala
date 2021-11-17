@@ -1,10 +1,12 @@
 package org.pac4j.http4s
 
+import cats.effect.IO
+
 import java.io._
 import java.nio.charset.StandardCharsets.UTF_8
-import java.util.Base64
-
+import java.util.{Base64, Optional}
 import io.circe.{Json, JsonObject}
+import org.pac4j.core.context.WebContext
 import org.pac4j.core.context.session.SessionStore
 import org.pac4j.http4s.SessionSyntax._
 import org.slf4j.LoggerFactory
@@ -18,29 +20,25 @@ import org.slf4j.LoggerFactory
   *
   * @author Iain Cardnell
   */
-trait Http4sCookieSessionStore extends SessionStore[Http4sWebContext] {
+trait Http4sCookieSessionStore[F[_]] extends SessionStore {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  def getSession(context: Http4sWebContext): Option[Session] =
-    context.getRequest.session
+  override def getSessionId(context: WebContext, createSession: Boolean): Optional[String] =
+    Optional.of("pac4j")
 
-  override def getOrCreateSessionId(context: Http4sWebContext): String = {
-    "pac4j"
-  }
+  private def getSession(context: WebContext): Option[Session] =
+    context.asInstanceOf[Http4sWebContext[F]].getRequest.session
 
-  override def get(context: Http4sWebContext, key: String): AnyRef = {
+  override def get(context: WebContext, key: String): Optional[AnyRef] = {
     logger.debug(s"get key: $key ")
-    getOpt(context, key) match {
-      case Some(s) => s
-      case None => null
-    }
+    Optional.ofNullable(getOpt(context, key).orNull)
   }
 
-  def getOpt(context: Http4sWebContext, key: String): Option[AnyRef] = {
+  private def getOpt(context: WebContext, key: String): Option[AnyRef] = {
     get(getSession(context), key)
   }
 
-  def get(sessionOpt: Option[Session], key: String): Option[AnyRef] = {
+  /* private */ def get(sessionOpt: Option[Session], key: String): Option[AnyRef] = {
     for {
       session <- sessionOpt
       obj <- session.asObject
@@ -49,10 +47,10 @@ trait Http4sCookieSessionStore extends SessionStore[Http4sWebContext] {
     } yield deserialise(valueStr)
   }
 
-  override def set(context: Http4sWebContext, key: String, value: Any): Unit = {
+  override def set(context: WebContext, key: String, value: Any): Unit = {
     logger.debug(s"set key: $key")
 
-    context.modifyResponse { r =>
+    context.asInstanceOf[Http4sWebContext[F]].modifyResponse { r =>
       r.newOrModifySession { f => set(f, key, value) }
     }
   }
@@ -73,23 +71,23 @@ trait Http4sCookieSessionStore extends SessionStore[Http4sWebContext] {
     }
   }
 
-  override def destroySession(context: Http4sWebContext): Boolean = {
+  override def destroySession(context: WebContext): Boolean = {
     logger.debug("destroySession")
-    context.modifyResponse(r => r.clearSession)
+    context.asInstanceOf[Http4sWebContext[F]].modifyResponse(r => r.clearSession)
     true
   }
 
-  override def getTrackableSession(context: Http4sWebContext): AnyRef = {
+  override def getTrackableSession(context: WebContext): Optional[AnyRef] = {
     logger.debug("getTrackableSession")
-    getSession(context)
+    Optional.ofNullable(getSession(context).orNull)
   }
 
-  override def buildFromTrackableSession(context: Http4sWebContext, trackableSession: Any): SessionStore[Http4sWebContext] = {
+  override def buildFromTrackableSession(context: WebContext, trackableSession: Any): Optional[SessionStore] = {
     // Everything stored in cookie
-    this
+    Optional.of(this)
   }
 
-  override def renewSession(context: Http4sWebContext): Boolean = {
+  override def renewSession(context: WebContext): Boolean = {
     // Everything stored in cookie
     true
   }
@@ -114,4 +112,6 @@ trait Http4sCookieSessionStore extends SessionStore[Http4sWebContext] {
   }
 }
 
-object Http4sCookieSessionStore extends Http4sCookieSessionStore
+object Http4sCookieSessionStore {
+  def ioInstance = new Http4sCookieSessionStore[IO]{}
+}
