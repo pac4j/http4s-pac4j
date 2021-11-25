@@ -24,7 +24,7 @@ jobs:
           java-version: ${{ env.JDK_CURRENT }}
           distribution: ${{ env.DISTRIBUTION }}
       - name: Build and test
-        run: sbt clean test
+        run: sbt clean +test
   publish:
     if: startsWith(github.ref, 'refs/heads/')
     runs-on: ubuntu-latest
@@ -38,7 +38,7 @@ jobs:
           java-version: ${{ env.JDK_CURRENT }}
           distribution: ${{ env.DISTRIBUTION }}
       - name: Publish
-        run: sbt publish
+        run: sbt +publish
         env:
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USER }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PWD }}
