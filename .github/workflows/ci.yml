@@ -39,3 +39,6 @@ jobs:
           distribution: ${{ env.DISTRIBUTION }}
       - name: Publish
         run: sbt publish
+        env:
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USER }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PWD }}

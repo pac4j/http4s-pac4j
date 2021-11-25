@@ -39,7 +39,9 @@ libraryDependencies ++= {
   }
 }
 
-credentials += Credentials(Path.userHome / ".sbt" / ".credentials")
+val username = scala.sys.env("SONATYPE_USERNAME")
+val password = scala.sys.env("SONATYPE_PASSWORD")
+credentials += Credentials("Sonatype", "oss.sonatype.org", username, password)
 
 homepage := Some(url("https://github.com/pac4j/http4s-pac4j"))
 licenses := List("Apache 2" -> new URL("http://www.apache.org/licenses/LICENSE-2.0.txt"))
