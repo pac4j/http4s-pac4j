@@ -39,8 +39,8 @@ libraryDependencies ++= {
   }
 }
 
-val username = scala.sys.env("SONATYPE_USERNAME")
-val password = scala.sys.env("SONATYPE_PASSWORD")
+val username = sys.env.get("SONATYPE_USERNAME").getOrElse("")
+val password = sys.env.get("SONATYPE_PASSWORD").getOrElse("")
 credentials += Credentials("Sonatype", "oss.sonatype.org", username, password)
 
 homepage := Some(url("https://github.com/pac4j/http4s-pac4j"))
