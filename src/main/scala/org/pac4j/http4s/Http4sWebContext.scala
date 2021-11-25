@@ -1,7 +1,8 @@
 package org.pac4j.http4s
 
 import java.util
-import cats.effect.{IO, Sync, SyncEffect, SyncIO}
+import cats.effect.{IO, Sync, SyncIO}
+import cats.effect.std.Dispatcher
 import cats.syntax.eq._
 import org.http4s._
 import org.pac4j.core.context.session.SessionStore
@@ -207,9 +208,14 @@ class Http4sWebContext[F[_]: Sync](
 
 object Http4sWebContext {
 
-  def ioInstance(request: Request[IO], config: Config) =
+  /** @deprecated
+   *  Use withDispatcherInstance
+   */
+  def ioInstance(request: Request[IO], config: Config) = {
+    import cats.effect.unsafe.implicits.global
     new Http4sWebContext[IO](request, config.getSessionStore, _.unsafeRunSync())
+  }
 
-  def syncEffectInstance[F[_] : SyncEffect](request: Request[F], config: Config) =
-    new Http4sWebContext[F](request, config.getSessionStore, SyncEffect[F].runSync[IO, String](_).unsafeRunSync())
+  def withDispatcherInstance[F[_]: Sync]( dispatcher: Dispatcher[F] )(request: Request[F], config: Config) =
+    new Http4sWebContext[F](request, config.getSessionStore, dispatcher.unsafeRunSync)
 }
