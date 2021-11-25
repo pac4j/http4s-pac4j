@@ -13,7 +13,7 @@ on:
       - master
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -23,5 +23,18 @@ jobs:
         with:
           java-version: ${{ env.JDK_CURRENT }}
           distribution: ${{ env.DISTRIBUTION }}
-      - name: Build, test and deploy
-        run: sbt clean test deploy
+      - name: Build and test
+        run: sbt clean test
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup JDK
+        uses: actions/setup-java@v2
+        with:
+          java-version: ${{ env.JDK_CURRENT }}
+          distribution: ${{ env.DISTRIBUTION }}
+      - name: Deploy
+        run: sbt deploy
