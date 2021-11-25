@@ -41,7 +41,7 @@ libraryDependencies ++= {
 
 val username = sys.env.get("SONATYPE_USERNAME").getOrElse("")
 val password = sys.env.get("SONATYPE_PASSWORD").getOrElse("")
-credentials += Credentials("Sonatype", "oss.sonatype.org", username, password)
+credentials += Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", username, password)
 
 homepage := Some(url("https://github.com/pac4j/http4s-pac4j"))
 licenses := List("Apache 2" -> new URL("http://www.apache.org/licenses/LICENSE-2.0.txt"))
