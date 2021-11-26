@@ -16,6 +16,7 @@ import org.pac4j.core.util.Pac4jConstants
 import org.typelevel.ci.CIString
 import org.typelevel.vault.Key
 
+import java.nio.charset.StandardCharsets
 import java.util.Optional
 import scala.jdk.CollectionConverters._
 
@@ -175,6 +176,20 @@ class Http4sWebContext[F[_]: Sync](
     logger.debug(s"setResponseStatus $code")
     modifyResponse { r =>
       r.withStatus(Status.fromInt(code).getOrElse(Status.Ok))
+    }
+  }
+
+  def setContentType(contentType: `Content-Type`): Unit = {
+    logger.debug(s"setContentType $contentType")
+    modifyResponse { r =>
+      r.withContentType(contentType)
+    }
+  }
+
+  def setContent(content: String): Unit = {
+    logger.debug(s"setContent $content")
+    modifyResponse { r =>
+      r.withEntity(content.getBytes(StandardCharsets.UTF_8))
     }
   }
 
