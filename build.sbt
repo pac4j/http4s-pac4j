@@ -1,6 +1,6 @@
 crossScalaVersions := Seq("2.12.15", "2.13.7", "3.1.0")
 organization := "org.pac4j"
-version      := "3.0.0"
+version      := "3.0.1-SNAPSHOT"
 
 val circeVersion = "0.14.1"
 val http4sVersion = "0.22.7"
