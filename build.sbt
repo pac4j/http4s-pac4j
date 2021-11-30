@@ -1,14 +1,13 @@
 crossScalaVersions := Seq("2.12.15", "2.13.7", "3.1.0")
 organization := "org.pac4j"
-version      := "3.0.1-SNAPSHOT"
+version      := "4.0.0-SNAPSHOT"
 
 val circeVersion = "0.14.1"
-val http4sVersion = "0.22.7"
+val http4sVersion = "0.23.6"
 val pac4jVersion = "5.1.5"
-val specs2Version = "4.10.0"
+val specs2Version = "4.12.12"
 val catsVersion = "2.6.1"
-//val catsEffectVersion = "2.1.3"
-val vaultVersion = "2.1.13"
+val vaultVersion = "3.1.0"
 val mouseVersion = "1.0.7"
 
 libraryDependencies ++= Seq(

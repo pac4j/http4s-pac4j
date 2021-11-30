@@ -45,30 +45,28 @@ object SecurityFilterMiddleware {
 
   def securityFilter[F[_] <: AnyRef : Sync](
       config: Config,
-      blocker: Blocker,
       contextBuilder: (Request[F], Config) => Http4sWebContext[F],
       clients: Option[String] = None,
       authorizers: Option[String] = None,
       matchers: Option[String] = None
-  )(implicit cs: ContextShift[F]): AuthMiddleware[F, List[CommonProfile]] =
-    securityFilter(config, blocker, contextBuilder, clients, authorizers, matchers, defaultSecurityGrantedAccessAdapter[F])
+  ): AuthMiddleware[F, List[CommonProfile]] =
+    securityFilter(config, contextBuilder, clients, authorizers, matchers, defaultSecurityGrantedAccessAdapter[F])
 
   def securityFilter[F[_] : Sync](
       config: Config,
-      blocker: Blocker,
       contextBuilder: (Request[F], Config) => Http4sWebContext[F],
       clients: Option[String],
       authorizers: Option[String],
       matchers: Option[String],
       securityGrantedAccessAdapter: AuthedRoutes[List[CommonProfile], F] => SecurityGrantedAccessAdapter
-  )(implicit cs: ContextShift[F]): AuthMiddleware[F, List[CommonProfile]] =
+  ): AuthMiddleware[F, List[CommonProfile]] =
     service =>
       Kleisli(request => {
         val securityLogic =
           new DefaultSecurityLogic
         val context = contextBuilder(request, config)
         OptionT.liftF(
-          blocker.delay[F, F[Response[F]]](securityLogic.perform(
+          Sync[F].blocking(securityLogic.perform(
             context,
             config.getSessionStore,
             config,

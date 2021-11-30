@@ -2,6 +2,7 @@ package org.pac4j.http4s
 
 import cats.syntax.all._
 import cats.effect.IO
+import cats.effect.unsafe.implicits.global
 import Generators._
 import Matchers._
 import SessionSyntax._
@@ -77,8 +78,6 @@ class SessionSpec(val exEnv: ExecutionEnv) extends Specification with ScalaCheck
     def toRequestCookie: RequestCookie = RequestCookie(c.name, c.content)
   }
   import implicits._
-  implicit val cs = IO.contextShift(exEnv.executionContext)
-  implicit val ti = IO.timer(exEnv.executionContext)
 
   val config = SessionConfig(
     cookieName = "session",

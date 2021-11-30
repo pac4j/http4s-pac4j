@@ -12,19 +12,18 @@ import org.pac4j.core.engine.DefaultLogoutLogic
   * @author Iain Cardnell
   */
 class LogoutService[F[_]: Sync](config: Config,
-    blocker: Blocker,
     contextBuilder: (Request[F], Config) => Http4sWebContext[F],
     defaultUrl: Option[String] = None,
     logoutUrlPattern: Option[String] = None,
     localLogout: Boolean = true,
     destroySession: Boolean = false,
     centralLogout: Boolean = false
-  )(implicit cs: ContextShift[F]) {
+  ) {
 
   def logout(request: Request[F]): F[Response[F]] = {
     val logoutLogic = new DefaultLogoutLogic()
     val webContext = contextBuilder(request, config)
-    blocker.delay[F, F[Response[F]]](logoutLogic.perform(webContext,
+    Sync[F].blocking(logoutLogic.perform(webContext,
       config.getSessionStore,
       config,
       config.getHttpActionAdapter,
