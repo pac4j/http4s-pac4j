@@ -4,7 +4,7 @@ version      := "4.0.1-SNAPSHOT"
 
 val circeVersion = "0.14.1"
 val http4sVersion = "0.23.6"
-val pac4jVersion = "5.2.0"
+val pac4jVersion = "5.4.2"
 val specs2Version = "4.12.12"
 val catsVersion = "2.6.1"
 val vaultVersion = "3.1.0"
