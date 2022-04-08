@@ -8,6 +8,8 @@ import org.pac4j.core.context.{Cookie, WebContext}
 import org.pac4j.core.util.Pac4jConstants
 import org.slf4j.LoggerFactory
 
+import scala.annotation.tailrec
+import scala.collection.concurrent.{ Map => ConcurrentMap }
 import scala.collection.JavaConverters._
 
 /**
@@ -36,7 +38,7 @@ class Http4sCacheSessionStore[F[_] : Sync](
 ) extends SessionStore {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  private val cache = scala.collection.mutable.Map[String, Map[String, AnyRef]]()
+  private val cache = scala.collection.concurrent.TrieMap[String, Map[String, AnyRef]]()
 
   override def getSessionId(context: WebContext, createSession: Boolean): Optional[String] = {
     val id = Option(context.getRequestAttribute(Pac4jConstants.SESSION_ID).asInstanceOf[Optional[AnyRef]].orElse(null)) match {
@@ -79,14 +81,11 @@ class Http4sCacheSessionStore[F[_] : Sync](
 
   override def set(context: WebContext, key: String, value: AnyRef): Unit = {
     val sessionId = getSessionId(context, true).get()
-    logger.debug(s"set sessionId: $sessionId key: $key")
-    val sessionMap = cache.getOrElseUpdate(sessionId, Map.empty)
-    val newMap = if (value == null) {
-      sessionMap - key
+    if (value == null) {
+      insertOrUpdate(cache)(sessionId)(Map.empty, _ - key)
     } else {
-      sessionMap + (key -> value)
+      insertOrUpdate(cache)(sessionId)(Map(key -> value), _ + (key -> value))
     }
-    cache.update(sessionId, newMap)
   }
 
   override def destroySession(context: WebContext): Boolean = {
@@ -124,5 +123,17 @@ class Http4sCacheSessionStore[F[_] : Sync](
 
     logger.debug(s"Renewed session: $oldSessionId -> $newSessionId")
     true
+  }
+
+  private def insertOrUpdate[K, V](map: ConcurrentMap[K, V])(key: K)(insert: V, update: V => V): Unit = {
+    @tailrec
+    def go(): Unit =
+      map putIfAbsent (key, insert) match {
+        case Some(prev) if map replace (key, prev, update(prev)) => ()
+        case Some(_) => go()
+        case None => ()
+      }
+
+    go()
   }
 }
