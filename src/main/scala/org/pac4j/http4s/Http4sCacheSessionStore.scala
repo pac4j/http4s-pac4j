@@ -21,7 +21,6 @@ import scala.collection.JavaConverters._
   * Note that as `cache` is a simple Map, if multiple web servers are running
   * sticky sessions will be required for this to work.
   * @param maxAge `Max-Age` cookie attribute
-  * @param expires `Expires` cookie attribute
   * @param domain `Domain` cookie attribute
   * @param path `Path` cookie attribute
   * @param secure `Secure` cookie attribute
@@ -41,7 +40,7 @@ class Http4sCacheSessionStore[F[_] : Sync](
   private val cache = scala.collection.concurrent.TrieMap[String, Map[String, AnyRef]]()
 
   override def getSessionId(context: WebContext, createSession: Boolean): Optional[String] = {
-    val id = Option(context.getRequestAttribute(Pac4jConstants.SESSION_ID).asInstanceOf[Optional[AnyRef]].orElse(null)) match {
+    val id = scalaOption(context.getRequestAttribute(Pac4jConstants.SESSION_ID)) match {
       case Some(sessionId) => sessionId.toString
       case None =>
         context.getRequestCookies.asScala.find(_.getName == Pac4jConstants.SESSION_ID) match {
@@ -69,7 +68,7 @@ class Http4sCacheSessionStore[F[_] : Sync](
   }
 
   override def get(context: WebContext, key: String): Optional[AnyRef] = {
-    val sessionId = getSessionId(context, false)
+    val sessionId = getSessionId(context, createSession = false)
     sessionId.map[AnyRef](sid => {
         val sessionMap = cache.getOrElseUpdate(sid, Map.empty)
         val value = sessionMap.get(key).orNull
@@ -80,7 +79,7 @@ class Http4sCacheSessionStore[F[_] : Sync](
   }
 
   override def set(context: WebContext, key: String, value: AnyRef): Unit = {
-    val sessionId = getSessionId(context, true).get()
+    val sessionId = getSessionId(context, createSession = true).get()
     if (value == null) {
       insertOrUpdate(cache)(sessionId)(Map.empty, _ - key)
     } else {
@@ -89,14 +88,15 @@ class Http4sCacheSessionStore[F[_] : Sync](
   }
 
   override def destroySession(context: WebContext): Boolean = {
-    val sessionId = getSessionId(context, false)
-    if (sessionId.isPresent && cache.contains(sessionId.get())) {
-      cache.remove(sessionId.get())
-      context.setRequestAttribute(Pac4jConstants.SESSION_ID, null)
-      context.asInstanceOf[Http4sWebContext[F]].removeResponseCookie(Pac4jConstants.SESSION_ID)
-      true
-    } else {
-      false
+    val sessionId = getSessionId(context, createSession = false)
+    scalaOption(sessionId).flatMap(cache.remove) match {
+      case Some(_) =>
+        context.setRequestAttribute(Pac4jConstants.SESSION_ID, null)
+        context.asInstanceOf[Http4sWebContext[F]].removeResponseCookie(Pac4jConstants.SESSION_ID)
+        true
+
+      case None =>
+        false
     }
   }
 
@@ -136,4 +136,7 @@ class Http4sCacheSessionStore[F[_] : Sync](
 
     go()
   }
+
+  private def scalaOption[A](o: Optional[A]): Option[A] =
+    if (o.isPresent) Some(o.get) else None
 }
