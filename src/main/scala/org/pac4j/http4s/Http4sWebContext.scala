@@ -168,7 +168,7 @@ class Http4sWebContext[F[_]: Sync](
 
   override def getPath: String = request.uri.path.toString
 
-  override def getRequestContent: String =
+  override lazy val getRequestContent: String =
     bodyExtractor(request.bodyText.compile.to(Collector.string))
 
   override def getProtocol: String = request.uri.scheme.get.value
