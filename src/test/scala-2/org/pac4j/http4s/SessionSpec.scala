@@ -82,7 +82,7 @@ class SessionSpec(val exEnv: ExecutionEnv) extends Specification with ScalaCheck
   val config = SessionConfig(
     cookieName = "session",
     mkCookie = ResponseCookie(_, _),
-    secret = "this is a secret",
+    secret = List.fill(16)(0xff.toByte),
     maxAge = 5.minutes
   )
 
@@ -158,7 +158,7 @@ class SessionSpec(val exEnv: ExecutionEnv) extends Specification with ScalaCheck
 
       "read None when the session is signed with a different secret" in prop { session: Session =>
          config
-           .copy(secret = "this is a different secret")
+           .copy(secret = List.fill(16)(0xaa.toByte))
            .cookie[IO](session.noSpaces)
            .map(cookie =>
              Request[IO](Method.GET, uri"/read").addCookie(cookie.toRequestCookie)

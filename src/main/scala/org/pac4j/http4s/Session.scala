@@ -24,6 +24,7 @@ import mouse.option._
 import org.http4s.server.HttpMiddleware
 import org.typelevel.vault.Key
 
+import java.nio.charset.StandardCharsets.UTF_8
 import scala.concurrent.duration.Duration
 import scala.util.Try
 
@@ -63,18 +64,18 @@ object SessionSyntax {
 /**
   * Session Cookie Configuration
   *
-  * @param cookieName
-  * @param mkCookie
-  * @param secret
-  * @param maxAge
+  * @param secret 16 bytes secret for cookie security
   */
 final case class SessionConfig(
   cookieName: String,
   mkCookie: (String, String) => ResponseCookie,
-  secret: String,
+  secret: List[Byte],
   maxAge: Duration
 ) {
-  require(secret.length >= 16)
+  private val KeySize = 16
+  require(secret.length >= KeySize)
+  // Fixme: Two keys should be derived for authentication and ciphering
+  private val keyBytes = secret.take(KeySize).toArray
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -90,7 +91,7 @@ final case class SessionConfig(
     }
 
   private[this] def keySpec: SecretKeySpec =
-    new SecretKeySpec(secret.substring(0, 16).getBytes("UTF-8"), "AES")
+    new SecretKeySpec(keyBytes, "AES")
 
   private[this] def encrypt(content: String): String = {
     val cipher = Cipher.getInstance("AES")
@@ -105,9 +106,8 @@ final case class SessionConfig(
   }
 
   private[this] def sign(content: String): String = {
-    val signKey = secret.getBytes("UTF-8")
     val signMac = Mac.getInstance("HmacSHA1")
-    signMac.init(new SecretKeySpec(signKey, "HmacSHA256"))
+    signMac.init(new SecretKeySpec(keyBytes, "HmacSHA1"))
     Base64
       .getEncoder
       .encodeToString(signMac.doFinal(content.getBytes("UTF-8")))
