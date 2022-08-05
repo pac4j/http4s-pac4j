@@ -96,13 +96,13 @@ final case class SessionConfig(
   private[this] def encrypt(content: String): String = {
     val cipher = Cipher.getInstance("AES")
     cipher.init(Cipher.ENCRYPT_MODE, keySpec)
-    Hex.encodeHexString(cipher.doFinal(content.getBytes("UTF-8")))
+    Hex.encodeHexString(cipher.doFinal(content.getBytes(UTF_8)))
   }
 
   private[this] def decrypt(content: String): Option[String] = {
     val cipher = Cipher.getInstance("AES")
     cipher.init(Cipher.DECRYPT_MODE, keySpec)
-    Try(new String(cipher.doFinal(Hex.decodeHex(content)), "UTF-8")).toOption
+    Try(new String(cipher.doFinal(Hex.decodeHex(content)), UTF_8)).toOption
   }
 
   private[this] def sign(content: String): String = {
@@ -110,7 +110,7 @@ final case class SessionConfig(
     signMac.init(new SecretKeySpec(keyBytes, "HmacSHA1"))
     Base64
       .getEncoder
-      .encodeToString(signMac.doFinal(content.getBytes("UTF-8")))
+      .encodeToString(signMac.doFinal(content.getBytes(UTF_8)))
   }
 
   def cookie[F[_]: Sync](content: String): F[ResponseCookie] =
@@ -118,8 +118,8 @@ final case class SessionConfig(
       val now = new Date().getTime / 1000
       val expires = now + maxAge.toSeconds
       val serialized = s"$expires-$content"
-      val signed = sign(serialized)
       val encrypted = encrypt(serialized)
+      val signed = sign(encrypted)
       val cookieValue = s"$signed-$encrypted"
       if (cookieValue.length > Session.cookieWarnLimit)
         logger.warn("Cookie size is too big and might be discarded by client browser. Actual size: {}", cookieValue.length)
@@ -130,9 +130,9 @@ final case class SessionConfig(
     Sync[F].delay {
       val now = new Date().getTime / 1000
       cookie.content.split('-') match {
-        case Array(signature, value) =>
+        case Array(signature, encrypted) if constantTimeEquals(signature, sign(encrypted)) =>
           for {
-            decrypted <- decrypt(value) if constantTimeEquals(signature, sign(decrypted))
+            decrypted <- decrypt(encrypted)
             Array(expires, content) = decrypted.split("-", 2)
             expiresSeconds <- Try(expires.toLong).toOption if expiresSeconds > now
           } yield content
