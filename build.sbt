@@ -1,6 +1,6 @@
 crossScalaVersions := Seq("2.12.15", "2.13.7", "3.1.0")
 organization := "org.pac4j"
-version      := "4.1.1-SNAPSHOT"
+version      := "4.2.0-SNAPSHOT"
 
 val circeVersion = "0.14.1"
 val http4sVersion = "0.23.6"
@@ -32,7 +32,7 @@ libraryDependencies ++= {
       "org.http4s" %% "http4s-jawn" % http4sVersion % Test,
       "org.specs2" %% "specs2-matcher-extra" % specs2Version % Test,
       "org.specs2" %% "specs2-scalacheck" % specs2Version % Test,
-      "org.specs2" %% "specs2-cats" % specs2Version,
+      "org.specs2" %% "specs2-cats" % specs2Version % Test,
     )
     case _ => Seq()
   }
@@ -43,7 +43,7 @@ val password = sys.env.get("SONATYPE_PASSWORD").getOrElse("")
 credentials += Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", username, password)
 
 homepage := Some(url("https://github.com/pac4j/http4s-pac4j"))
-licenses := List("Apache 2" -> new URL("http://www.apache.org/licenses/LICENSE-2.0.txt"))
+licenses := List("Apache 2" -> new URL("https://www.apache.org/licenses/LICENSE-2.0.txt"))
 scmInfo := Some(
   ScmInfo(
     url("https://github.com/pac4j/http4s-pac4j"),

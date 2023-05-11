@@ -15,7 +15,6 @@ import io.circe.jawn
 import javax.crypto.spec.SecretKeySpec
 import javax.crypto.{Cipher, Mac}
 import org.http4s._
-import org.pac4j.http4s.SessionSyntax._
 import org.slf4j.LoggerFactory
 
 import java.util.Base64
