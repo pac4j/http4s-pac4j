@@ -66,8 +66,16 @@ class Http4sWebContext[F[_]: Sync](
   }
 
   override def getRequestParameters: util.Map[String, Array[String]] = {
-    logger.debug(s"getRequestParameters")
-    request.params.toSeq.map(a => (a._1, Array(a._2))).toMap.asJava
+    if (request.contentType.contains(`Content-Type`(MediaType.application.`x-www-form-urlencoded`))) {
+      logger.debug("getRequestParameters: Getting from Url Encoded Form")
+      UrlForm.decodeString(Charset.`UTF-8`)(getRequestContent) match {
+        case Left(err) => throw new Exception(err.toString)
+        case Right(urlForm) => urlForm.values.map(a => (a._1, a._2.iterator.toArray)).asJava
+      }
+    } else {
+      logger.debug("getRequestParameters: Getting from query params")
+      request.params.map(a => (a._1, Array(a._2))).asJava
+    }
   }
 
   override def getRequestAttribute(name: String): Optional[AnyRef] = {
