@@ -39,7 +39,7 @@ class Http4sWebContext[F[_]: Sync](
 
   private var response: Response[F] = Response()
 
-  case class Pac4jUserProfiles(pac4jUserProfiles: util.LinkedHashMap[String, CommonProfile])
+  type Pac4jUserProfiles = util.LinkedHashMap[String, CommonProfile]
 
   val pac4jUserProfilesAttr: Key[Pac4jUserProfiles] =
     Key.newKey[SyncIO, Pac4jUserProfiles].unsafeRunSync()
@@ -98,7 +98,7 @@ class Http4sWebContext[F[_]: Sync](
     logger.debug(s"setRequestAttribute: $name")
     request = name match {
       case Pac4jConstants.USER_PROFILES =>
-        request.withAttribute(pac4jUserProfilesAttr, Pac4jUserProfiles(value.asInstanceOf[util.LinkedHashMap[String, CommonProfile]]))
+        request.withAttribute(pac4jUserProfilesAttr, value.asInstanceOf[Pac4jUserProfiles])
       case Pac4jConstants.SESSION_ID =>
         request.withAttribute(sessionIdAttr, value.asInstanceOf[String])
       case Pac4jConstants.CSRF_TOKEN =>
