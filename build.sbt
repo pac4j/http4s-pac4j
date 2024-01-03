@@ -1,14 +1,14 @@
-crossScalaVersions := Seq("2.12.15", "2.13.7", "3.1.0")
+crossScalaVersions := Seq("2.12.18", "2.13.12", "3.3.1")
 organization := "org.pac4j"
 version      := "4.2.0-SNAPSHOT"
 
-val circeVersion = "0.14.1"
-val http4sVersion = "0.23.6"
-val pac4jVersion = "5.4.2"
-val specs2Version = "4.12.12"
-val catsVersion = "2.6.1"
-val vaultVersion = "3.1.0"
-val mouseVersion = "1.0.7"
+val circeVersion = "0.14.6"
+val http4sVersion = "0.23.24"
+val pac4jVersion = "5.7.2"
+val specs2Version = "4.20.3"
+val catsVersion = "2.10.0"
+val vaultVersion = "3.5.0"
+val mouseVersion = "1.2.2"
 
 libraryDependencies ++= Seq(
   "io.circe" %% "circe-core" % circeVersion,
@@ -17,18 +17,18 @@ libraryDependencies ++= Seq(
   "org.http4s" %% "http4s-server" % http4sVersion,
   "org.http4s" %% "http4s-circe" % http4sVersion,
   "org.pac4j" % "pac4j-core" % pac4jVersion,
-  "org.slf4j" % "slf4j-api" % "1.7.26",
-  "commons-codec" % "commons-codec" % "1.14",
+  "org.slf4j" % "slf4j-api" % "2.0.10",
+  "commons-codec" % "commons-codec" % "1.16.0",
   "org.typelevel" %% "cats-core" % catsVersion,
   "org.typelevel" %% "vault" % vaultVersion,
   "org.typelevel" %% "mouse" % mouseVersion,
-  "org.scala-lang.modules" %% "scala-collection-compat" % "2.6.0",
+  "org.scala-lang.modules" %% "scala-collection-compat" % "2.11.0",
 )
 
 libraryDependencies ++= {
   CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, _)) => Seq(
-      "io.circe" %% "circe-optics" % circeVersion % Test,
+      "io.circe" %% "circe-optics" % "0.14.1" % Test,
       "org.http4s" %% "http4s-jawn" % http4sVersion % Test,
       "org.specs2" %% "specs2-matcher-extra" % specs2Version % Test,
       "org.specs2" %% "specs2-scalacheck" % specs2Version % Test,
