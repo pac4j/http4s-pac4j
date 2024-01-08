@@ -44,15 +44,16 @@ class Http4sCacheSessionStore[F[_] : Sync](
 
   override def getSessionId(context: WebContext, createSession: Boolean): Optional[String] = {
     val id = context.getRequestAttribute(Pac4jConstants.SESSION_ID).toScala match {
-      case Some(sessionId) => sessionId.toString
+      case Some(sessionId) => Some(sessionId.toString)
       case None =>
         context.getRequestCookies.asScala.find(_.getName == Pac4jConstants.SESSION_ID) match {
-          case Some(cookie) => cookie.getValue
-          case None => createSessionId(context.asInstanceOf[Http4sWebContext[F]])
+          case Some(cookie) => Option(cookie.getValue)
+          case None if createSession => Some(createSessionId(context.asInstanceOf[Http4sWebContext[F]]))
+          case None => None
         }
     }
     logger.debug(s"getOrCreateSessionId - $id")
-    Optional.ofNullable(id)
+    id.toJava
   }
 
   private def createSessionId(context: Http4sWebContext[F]): String = {
