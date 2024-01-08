@@ -25,16 +25,21 @@ libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-collection-compat" % "2.11.0",
 )
 
+libraryDependencies ++= Seq(
+  "org.http4s" %% "http4s-jawn" % http4sVersion % Test,
+  "org.specs2" %% "specs2-matcher-extra" % specs2Version % Test,
+  "org.specs2" %% "specs2-scalacheck" % specs2Version % Test,
+  "org.specs2" %% "specs2-cats" % specs2Version % Test,
+)
+
 libraryDependencies ++= {
   CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, _)) => Seq(
       "io.circe" %% "circe-optics" % "0.14.1" % Test,
-      "org.http4s" %% "http4s-jawn" % http4sVersion % Test,
-      "org.specs2" %% "specs2-matcher-extra" % specs2Version % Test,
-      "org.specs2" %% "specs2-scalacheck" % specs2Version % Test,
-      "org.specs2" %% "specs2-cats" % specs2Version % Test,
     )
-    case _ => Seq()
+    case _ => Seq(
+      "io.circe" %% "circe-optics" % "0.15.0" % Test,
+    )
   }
 }
 
