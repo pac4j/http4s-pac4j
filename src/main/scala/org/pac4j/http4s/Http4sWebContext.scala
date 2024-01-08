@@ -20,6 +20,9 @@ import org.typelevel.vault.Key
 import java.nio.charset.StandardCharsets
 import java.util.Optional
 import scala.jdk.CollectionConverters._
+import org.http4s.SameSite
+import _root_.org.http4s.SameSite
+import _root_.org.http4s.SameSite
 
 /**
   * Http4sWebContext is the adapter layer to allow Pac4j to interact with
@@ -152,6 +155,11 @@ class Http4sWebContext[F[_]: Sync](
   override def addResponseCookie(cookie: Cookie): Unit = {
     logger.debug("addResponseCookie")
     val maxAge = Option(cookie.getMaxAge).filter(_ =!= -1).map(_.toLong)
+    val sameSite = Option(cookie.getSameSitePolicy()).map(_.toLowerCase()).map {
+      case "strict" => SameSite.Strict
+      case "lax" => SameSite.Lax
+      case _ => SameSite.None
+    }
 
     val http4sCookie = ResponseCookie(
       name = cookie.getName,
@@ -160,8 +168,8 @@ class Http4sWebContext[F[_]: Sync](
       domain = Option(cookie.getDomain),
       path = Option(cookie.getPath),
       secure = cookie.isSecure,
-      httpOnly = cookie.isHttpOnly
-      // - `RequestCookie.sameSite` has no counterpart in `Cookie`;
+      httpOnly = cookie.isHttpOnly,
+      sameSite = sameSite,
       // - `RequestCookie.extension` has no counterpart in `Cookie`;
       // - `Cookie.getComment` can be passed via `extension`, but it's not worth
       // the trouble.

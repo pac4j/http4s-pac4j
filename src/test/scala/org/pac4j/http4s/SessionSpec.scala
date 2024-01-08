@@ -4,7 +4,6 @@ import cats.syntax.all._
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import Generators._
-import Matchers._
 import SessionSyntax._
 import io.circe._
 import io.circe.optics.all._
@@ -27,6 +26,8 @@ import mouse.option._
 import org.http4s.headers.Location
 
 import scala.concurrent.duration._
+import Generators._
+import CookieMatchers._
 
 // Copyright 2013-2014 http4s [http://www.http4s.org]
 
@@ -36,37 +37,6 @@ object Generators {
       string <- arbitrary[String]
       number <- arbitrary[Int]
     } yield Json.obj("string" -> string.asJson, "number" -> number.asJson))
-}
-
-object Matchers {
-  type Cookie = ResponseCookie
-  import org.specs2.matcher.Matchers._
-
-  def setCookies(resp: Response[IO]): List[Cookie] = resp
-    .cookies
-    .filter(_.expires.forall(i => !i.toInstant.isBefore(Instant.now())))
-
-  def expiredCookies(resp: Response[IO]): List[Cookie] = resp
-    .cookies
-    .filter(_.expires.exists(_.toInstant.isBefore(Instant.now())))
-
-  def beCookieWithName(name: String): Matcher[Cookie] =
-    be_===(name) ^^ ((_: Cookie).name)
-
-  def beCookieWhoseContentContains(subcontent: String): Matcher[Cookie] =
-    contain(subcontent) ^^ ((_: Cookie).content)
-
-  def haveSetCookie(cookieName: String): Matcher[Response[IO]] =
-    contain(beCookieWithName(cookieName)) ^^ setCookies _
-
-  def haveClearedCookie(cookieName: String): Matcher[Response[IO]] =
-    contain(beCookieWithName(cookieName)) ^^ expiredCookies _
-
-  def haveStatus(status: Status): Matcher[Response[IO]] =
-    be_===(status) ^^ { (r: Response[IO]) => r.status }
-
-  def haveBody[A](a: A)(implicit d: EntityDecoder[IO, A]): Matcher[Response[IO]] =
-    be_===(a) ^^ { (r: Response[IO]) => r.as[A].unsafeRunSync() }
 }
 
 class SessionSpec(val exEnv: ExecutionEnv) extends Specification with ScalaCheck with IOMatchers {
