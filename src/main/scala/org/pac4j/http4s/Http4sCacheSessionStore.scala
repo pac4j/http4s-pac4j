@@ -10,7 +10,9 @@ import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
 import scala.collection.concurrent.{ Map => ConcurrentMap }
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
+import scala.jdk.OptionConverters._
+import org.http4s.SameSite
 
 /**
   * Http4sCacheSessionStore is an in memory session implementation.
@@ -33,14 +35,15 @@ class Http4sCacheSessionStore[F[_] : Sync](
   domain: Option[String] = None,
   path: Option[String] = Some("/"),
   secure: Boolean = false,
-  httpOnly: Boolean = false
+  httpOnly: Boolean = false,
+  sameSite: Option[SameSite] = None,
 ) extends SessionStore {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   private val cache = scala.collection.concurrent.TrieMap[String, Map[String, AnyRef]]()
 
   override def getSessionId(context: WebContext, createSession: Boolean): Optional[String] = {
-    val id = scalaOption(context.getRequestAttribute(Pac4jConstants.SESSION_ID)) match {
+    val id = context.getRequestAttribute(Pac4jConstants.SESSION_ID).toScala match {
       case Some(sessionId) => sessionId.toString
       case None =>
         context.getRequestCookies.asScala.find(_.getName == Pac4jConstants.SESSION_ID) match {
@@ -62,6 +65,7 @@ class Http4sCacheSessionStore[F[_] : Sync](
     path.foreach(cookie.setPath)
     cookie.setSecure(secure)
     cookie.setHttpOnly(httpOnly)
+    sameSite.foreach(s => cookie.setSameSitePolicy(s.renderString))
 
     context.addResponseCookie(cookie)
     id
@@ -88,8 +92,8 @@ class Http4sCacheSessionStore[F[_] : Sync](
   }
 
   override def destroySession(context: WebContext): Boolean = {
-    val sessionId = getSessionId(context, createSession = false)
-    scalaOption(sessionId).flatMap(cache.remove) match {
+    val sessionId = getSessionId(context, createSession = false).toScala
+    sessionId.flatMap(cache.remove) match {
       case Some(_) =>
         context.setRequestAttribute(Pac4jConstants.SESSION_ID, null)
         context.asInstanceOf[Http4sWebContext[F]].removeResponseCookie(Pac4jConstants.SESSION_ID)
@@ -136,7 +140,4 @@ class Http4sCacheSessionStore[F[_] : Sync](
 
     go()
   }
-
-  private def scalaOption[A](o: Optional[A]): Option[A] =
-    if (o.isPresent) Some(o.get) else None
 }
