@@ -2,31 +2,27 @@ package org.pac4j.http4s
 
 import cats.syntax.all._
 import cats.effect.IO
-import cats.effect.unsafe.implicits.global
 import Generators._
 import SessionSyntax._
 import io.circe._
 import io.circe.optics.all._
 import io.circe.syntax._
 
-import java.time.Instant
 import monocle.Monocle
 import monocle.Monocle._
 import org.http4s._
 import org.http4s.dsl.io._
 import org.http4s.circe._
-import cats.data.NonEmptyList
 import org.scalacheck.Arbitrary
 import org.scalacheck.Arbitrary.arbitrary
 import org.specs2.ScalaCheck
-import org.specs2.matcher.{IOMatchers, Matcher, TraversableMatchers}
+import org.specs2.matcher.{IOMatchers, TraversableMatchers}
 import org.specs2.mutable.Specification
 import org.specs2.concurrent.ExecutionEnv
 import mouse.option._
 import org.http4s.headers.Location
 
 import scala.concurrent.duration._
-import Generators._
 import CookieMatchers._
 
 // Copyright 2013-2014 http4s [http://www.http4s.org]
@@ -150,7 +146,6 @@ class SessionSpec(val exEnv: ExecutionEnv) extends Specification with ScalaCheck
 
     "Modifying a session" should {
       "update the session when set" in {
-        def unsafeToNel[A](as: List[A]): NonEmptyList[A] = NonEmptyList(as.head, as.tail)
         val response = for {
           cookie <- config
             .cookie[IO](Json.obj("number" -> 0.asJson).noSpaces)

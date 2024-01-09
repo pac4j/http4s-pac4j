@@ -72,16 +72,27 @@ publishTo := {
 }
 publishMavenStyle := true
 
-scalacOptions ++= {
-  val scalaVersion0 = scalaVersion.value
-  val partialUnification =
-    if (scalaVersion0.startsWith("2.12")) {
-      Seq("-Ypartial-unification")
-    } else Seq()
-
-  partialUnification ++ Seq(
+val globalScalacOptions = Seq(
     "-deprecation",
     "-language:implicitConversions",
     "-language:higherKinds"
   )
-}
+
+val extraScalacOptions_2 = Seq(
+    "-Xlint"
+  )
+
+val extraScalacOptions_2_12 = Seq(
+    "-Ypartial-unification"
+  )
+
+val extraScalacOptions_3 = Seq(
+    "-Wunused:all"
+  )
+scalacOptions ++= {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, 12)) => globalScalacOptions ++ extraScalacOptions_2 ++ extraScalacOptions_2_12
+        case Some((2, 13)) => globalScalacOptions ++ extraScalacOptions_2
+        case _             => globalScalacOptions ++ extraScalacOptions_3
+      }
+    }

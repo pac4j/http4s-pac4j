@@ -14,7 +14,7 @@ import org.pac4j.core.context.WebContext
 import org.pac4j.core.context.session.SessionStore
 import org.pac4j.http4s
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
   * DefaultSecurityGrantedAccessAdapter gets called if user is granted access
