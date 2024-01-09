@@ -5,7 +5,6 @@ import cats.effect.{IO, Sync, SyncIO}
 import cats.effect.std.Dispatcher
 import cats.syntax.eq._
 import org.http4s._
-import org.pac4j.core.context.session.SessionStore
 import org.pac4j.core.context.{Cookie, WebContext}
 import org.http4s.headers.`Content-Type`
 import org.pac4j.core.config.Config
@@ -21,21 +20,18 @@ import java.nio.charset.StandardCharsets
 import java.util.Optional
 import scala.jdk.CollectionConverters._
 import org.http4s.SameSite
-import _root_.org.http4s.SameSite
-import _root_.org.http4s.SameSite
 
 /**
   * Http4sWebContext is the adapter layer to allow Pac4j to interact with
   * Http4s request and response objects.
   *
   * @param request Http4s request object currently being handled
-  * @param sessionStore User session information
+  * @param bodyExtractor function to extract the body from F[]
   *
   * @author Iain Cardnell
   */
 class Http4sWebContext[F[_]: Sync](
     private var request: Request[F],
-    private val sessionStore: SessionStore,
     private val bodyExtractor: F[String] => String,
   ) extends WebContext {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -229,9 +225,9 @@ object Http4sWebContext {
    */
   def ioInstance(request: Request[IO], config: Config) = {
     import cats.effect.unsafe.implicits.global
-    new Http4sWebContext[IO](request, config.getSessionStore, _.unsafeRunSync())
+    new Http4sWebContext[IO](request, _.unsafeRunSync())
   }
 
   def withDispatcherInstance[F[_]: Sync]( dispatcher: Dispatcher[F] )(request: Request[F], config: Config) =
-    new Http4sWebContext[F](request, config.getSessionStore, dispatcher.unsafeRunSync)
+    new Http4sWebContext[F](request, dispatcher.unsafeRunSync)
 }

@@ -133,8 +133,8 @@ class Http4sCacheSessionStore[F[_] : Sync](
   private def insertOrUpdate[K, V](map: ConcurrentMap[K, V])(key: K)(insert: V, update: V => V): Unit = {
     @tailrec
     def go(): Unit =
-      map putIfAbsent (key, insert) match {
-        case Some(prev) if map replace (key, prev, update(prev)) => ()
+      map.putIfAbsent(key, insert) match {
+        case Some(prev) if map.replace(key, prev, update(prev)) => ()
         case Some(_) => go()
         case None => ()
       }
