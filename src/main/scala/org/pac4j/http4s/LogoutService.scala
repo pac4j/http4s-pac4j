@@ -24,7 +24,7 @@ class LogoutService[F[_]: Sync](config: Config,
     val logoutLogic = new DefaultLogoutLogic()
     val webContext = contextBuilder(request, config)
     Sync[F].blocking(logoutLogic.perform(webContext,
-      config.getSessionStore,
+      config.getSessionStoreFactory.newSessionStore(),
       config,
       config.getHttpActionAdapter,
       this.defaultUrl.orNull,

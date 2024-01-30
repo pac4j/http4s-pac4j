@@ -68,7 +68,7 @@ object SecurityFilterMiddleware {
         OptionT.liftF(
           Sync[F].blocking(securityLogic.perform(
             context,
-            config.getSessionStore,
+            config.getSessionStoreFactory.newSessionStore(),
             config,
             securityGrantedAccessAdapter(service),
             config.getHttpActionAdapter,
