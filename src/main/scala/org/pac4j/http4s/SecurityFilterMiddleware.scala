@@ -7,7 +7,7 @@ import org.http4s.{AuthedRoutes, ContextRequest, Request, Response}
 import org.http4s.server.AuthMiddleware
 import org.http4s.implicits._
 import org.pac4j.core.config.Config
-import org.pac4j.core.engine.{DefaultSecurityLogic, SecurityGrantedAccessAdapter}
+import org.pac4j.core.engine.{DefaultSecurityLogic, SecurityGrantedAccessAdapter, SecurityLogic}
 import org.pac4j.core.profile.{CommonProfile, UserProfile}
 import cats.data.{Kleisli, OptionT}
 import org.pac4j.core.context.WebContext
@@ -48,9 +48,10 @@ object SecurityFilterMiddleware {
       contextBuilder: (Request[F], Config) => Http4sWebContext[F],
       clients: Option[String] = None,
       authorizers: Option[String] = None,
-      matchers: Option[String] = None
+      matchers: Option[String] = None,
+      securityLogic: SecurityLogic = new DefaultSecurityLogic
   ): AuthMiddleware[F, List[CommonProfile]] =
-    securityFilter(config, contextBuilder, clients, authorizers, matchers, defaultSecurityGrantedAccessAdapter[F])
+    securityFilter(config, contextBuilder, clients, authorizers, matchers, securityLogic, defaultSecurityGrantedAccessAdapter[F])
 
   def securityFilter[F[_] : Sync](
       config: Config,
@@ -58,12 +59,11 @@ object SecurityFilterMiddleware {
       clients: Option[String],
       authorizers: Option[String],
       matchers: Option[String],
-      securityGrantedAccessAdapter: AuthedRoutes[List[CommonProfile], F] => SecurityGrantedAccessAdapter
+      securityLogic: SecurityLogic,
+      securityGrantedAccessAdapter: AuthedRoutes[List[CommonProfile], F] => SecurityGrantedAccessAdapter,
   ): AuthMiddleware[F, List[CommonProfile]] =
     service =>
       Kleisli(request => {
-        val securityLogic =
-          new DefaultSecurityLogic
         val context = contextBuilder(request, config)
         OptionT.liftF(
           Sync[F].blocking(securityLogic.perform(
