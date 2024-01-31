@@ -26,7 +26,7 @@ class CallbackService[F[_]: Sync](config: Config,
     val callbackLogic = new DefaultCallbackLogic()
     val webContext = contextBuilder(request, config)
     Sync[F].blocking(callbackLogic.perform(webContext,
-      config.getSessionStore,
+      config.getSessionStoreFactory.newSessionStore(),
       config,
       config.getHttpActionAdapter,
       this.defaultUrl.orNull,
