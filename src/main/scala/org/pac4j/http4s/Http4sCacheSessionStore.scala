@@ -30,6 +30,7 @@ import org.http4s.SameSite
   *
   * @author Iain Cardnell
   */
+@deprecated("Use Http4sGenericSessionStore in combination with CacheSessionRepository instead", since = "4.4.0")
 class Http4sCacheSessionStore[F[_] : Sync](
   maxAge: Option[Int] = None,
   domain: Option[String] = None,
