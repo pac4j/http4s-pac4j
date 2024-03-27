@@ -1,6 +1,6 @@
 crossScalaVersions := Seq("2.12.18", "2.13.12", "3.3.1")
 organization := "org.pac4j"
-version      := "4.3.1-SNAPSHOT"
+version      := "4.4.0-SNAPSHOT"
 
 val circeVersion = "0.14.6"
 val http4sVersion = "0.23.25"
@@ -9,6 +9,7 @@ val specs2Version = "4.20.3"
 val catsVersion = "2.10.0"
 val vaultVersion = "3.5.0"
 val mouseVersion = "1.2.2"
+val catsEffectTestingVersion = "1.5.0"
 
 libraryDependencies ++= Seq(
   "io.circe" %% "circe-core" % circeVersion,
@@ -30,6 +31,7 @@ libraryDependencies ++= Seq(
   "org.specs2" %% "specs2-matcher-extra" % specs2Version % Test,
   "org.specs2" %% "specs2-scalacheck" % specs2Version % Test,
   "org.specs2" %% "specs2-cats" % specs2Version % Test,
+  "org.typelevel" %% "cats-effect-testing-specs2" % catsEffectTestingVersion % Test
 )
 
 libraryDependencies ++= {
