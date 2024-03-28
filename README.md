@@ -3,7 +3,7 @@
 </p>
 
 The `http4s-pac4j` project is an **easy and powerful security library for http4s web applications and web services** which supports authentication and authorization, but also logout and advanced features like session fixation and CSRF protection.
-It's based on Http4s 0.23 and on the **[pac4j security engine](https://github.com/pac4j/pac4j) v5**. The library is cross-built for Scala 2.12 and 2.13. It's available under the Apache 2 license.
+It's based on Http4s 0.23 and on the **[pac4j security engine](https://github.com/pac4j/pac4j) v5**. The library is cross-built for Scala 2.12, 2.13 and 3. It's available under the Apache 2 license.
 
 [**Main concepts and components:**](http://www.pac4j.org/docs/main-concepts-and-components.html)
 
@@ -48,7 +48,7 @@ OpenID Connect, JWT...
 The latest released version is the [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.pac4j/http4s-pac4j/badge.svg?style=flat)](https://maven-badges.herokuapp.com/maven-central/org.pac4j/http4s-pac4j), available in the [Maven central repository](https://repo.maven.apache.org/maven2).
 The [next version](https://github.com/pac4j/http4s-pac4j/wiki/Next-version) is under development.
 
-See the [release notes](https://github.com/pac4j/http4s-pac4j/wiki/Release-Notes). Learn more by browsing the [pac4j documentation](https://www.javadoc.io/doc/org.pac4j/pac4j-core/5.2.0/index.html) and the [http4s-pac4j Javadoc](http://www.javadoc.io/doc/org.pac4j/http4s-pac4j/4.0.0).
+See the [release notes](https://github.com/pac4j/http4s-pac4j/wiki/Release-Notes). Learn more by browsing the [pac4j documentation](https://www.javadoc.io/doc/org.pac4j/pac4j-core/5.7.2/index.html) and the [http4s-pac4j Javadoc](http://www.javadoc.io/doc/org.pac4j/http4s-pac4j/4.4.0).
 
 See the [migration guide](https://github.com/pac4j/http4s-pac4j/wiki/Migration-guide) as well.
 
