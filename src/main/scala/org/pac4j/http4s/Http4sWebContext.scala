@@ -228,6 +228,6 @@ object Http4sWebContext {
     new Http4sWebContext[IO](request, _.unsafeRunSync())
   }
 
-  def withDispatcherInstance[F[_]: Sync]( dispatcher: Dispatcher[F] )(request: Request[F], config: Config) =
+  def withDispatcherInstance[F[_]: Sync](dispatcher: Dispatcher[F])(request: Request[F]) =
     new Http4sWebContext[F](request, dispatcher.unsafeRunSync)
 }
