@@ -2,13 +2,13 @@ crossScalaVersions := Seq("2.12.18", "2.13.12", "3.3.1")
 organization := "org.pac4j"
 version      := "5.0.0-SNAPSHOT"
 
-val circeVersion = "0.14.6"
-val http4sVersion = "0.23.25"
-val pac4jVersion = "6.0.2"
+val circeVersion = "0.14.7"
+val http4sVersion = "0.23.27"
+val pac4jVersion = "6.0.3"
 val specs2Version = "4.20.3"
 val catsVersion = "2.10.0"
 val vaultVersion = "3.5.0"
-val mouseVersion = "1.2.2"
+val mouseVersion = "1.2.3"
 val catsEffectTestingVersion = "1.5.0"
 
 libraryDependencies ++= Seq(
@@ -19,7 +19,7 @@ libraryDependencies ++= Seq(
   "org.http4s" %% "http4s-circe" % http4sVersion,
   "org.pac4j" % "pac4j-core" % pac4jVersion,
   "org.slf4j" % "slf4j-api" % "2.0.10",
-  "commons-codec" % "commons-codec" % "1.16.0",
+  "commons-codec" % "commons-codec" % "1.17.0",
   "org.typelevel" %% "cats-core" % catsVersion,
   "org.typelevel" %% "vault" % vaultVersion,
   "org.typelevel" %% "mouse" % mouseVersion,
