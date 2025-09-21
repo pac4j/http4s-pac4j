@@ -3,7 +3,7 @@
 </p>
 
 The `http4s-pac4j` project is an **easy and powerful security library for http4s web applications and web services** which supports authentication and authorization, but also logout and advanced features like session fixation and CSRF protection.
-It's based on Http4s 0.23 and on the **[pac4j security engine](https://github.com/pac4j/pac4j)**. The library is cross-built for Scala 2.12, 2.13 and 3. It's available under the Apache 2 license.
+It's based on http4s 0.23 and on the **[pac4j security engine](https://github.com/pac4j/pac4j)**. The library is cross-built for Scala 2.12, 2.13 and 3. It's available under the Apache 2 license.
 
 [**Main concepts and components:**](http://www.pac4j.org/docs/main-concepts-and-components.html)
 
