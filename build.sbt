@@ -37,10 +37,10 @@ libraryDependencies ++= Seq(
 libraryDependencies ++= {
   CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, _)) => Seq(
-      "io.circe" %% "circe-optics" % "0.14.1" % Test,
+      "io.circe" %% "circe-optics" % "0.15.1" % Test,
     )
     case _ => Seq(
-      "io.circe" %% "circe-optics" % "0.15.0" % Test,
+      "io.circe" %% "circe-optics" % "0.15.1" % Test,
     )
   }
 }
