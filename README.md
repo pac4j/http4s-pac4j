@@ -46,7 +46,6 @@ OpenID Connect, JWT...
 ## Versions
 
 The latest released version is the [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.pac4j/http4s-pac4j/badge.svg?style=flat)](https://maven-badges.herokuapp.com/maven-central/org.pac4j/http4s-pac4j), available in the [Maven central repository](https://repo.maven.apache.org/maven2).
-The [next version](https://github.com/pac4j/http4s-pac4j/wiki/Next-version) is under development.
 
 See the [release notes](https://github.com/pac4j/http4s-pac4j/wiki/Release-Notes).
 
