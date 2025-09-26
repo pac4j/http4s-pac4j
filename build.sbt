@@ -23,7 +23,7 @@ libraryDependencies ++= Seq(
   "org.typelevel" %% "cats-core" % catsVersion,
   "org.typelevel" %% "vault" % vaultVersion,
   "org.typelevel" %% "mouse" % mouseVersion,
-  "org.scala-lang.modules" %% "scala-collection-compat" % "2.11.0",
+  "org.scala-lang.modules" %% "scala-collection-compat" % "2.13.0",
 )
 
 libraryDependencies ++= Seq(
