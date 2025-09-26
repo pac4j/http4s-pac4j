@@ -19,7 +19,7 @@ libraryDependencies ++= Seq(
   "org.http4s" %% "http4s-circe" % http4sVersion,
   "org.pac4j" % "pac4j-core" % pac4jVersion,
   "org.slf4j" % "slf4j-api" % "2.0.10",
-  "commons-codec" % "commons-codec" % "1.17.0",
+  "commons-codec" % "commons-codec" % "1.19.0",
   "org.typelevel" %% "cats-core" % catsVersion,
   "org.typelevel" %% "vault" % vaultVersion,
   "org.typelevel" %% "mouse" % mouseVersion,
