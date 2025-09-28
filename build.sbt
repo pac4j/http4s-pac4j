@@ -9,7 +9,7 @@ val specs2Version = "4.20.3"
 val catsVersion = "2.10.0"
 val vaultVersion = "3.5.0"
 val mouseVersion = "1.2.3"
-val catsEffectTestingVersion = "1.5.0"
+val catsEffectTestingVersion = "1.7.0"
 
 libraryDependencies ++= Seq(
   "io.circe" %% "circe-core" % circeVersion,
