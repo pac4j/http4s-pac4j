@@ -8,7 +8,7 @@ val pac4jVersion = "6.0.3"
 val specs2Version = "4.20.3"
 val catsVersion = "2.10.0"
 val vaultVersion = "3.5.0"
-val mouseVersion = "1.2.3"
+val mouseVersion = "1.3.2"
 val catsEffectTestingVersion = "1.5.0"
 
 libraryDependencies ++= Seq(
