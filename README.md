@@ -9,7 +9,7 @@ It's based on http4s 0.23 and on the **[pac4j security engine](https://github.co
 
 1) A [**client**](http://www.pac4j.org/docs/clients.html) represents an authentication mechanism. It performs the login process and returns a user profile. An indirect client is for web application authentication while a direct client is for web services authentication:
 
-&#9656; OAuth - SAML - CAS - OpenID Connect - HTTP - Google App Engine - LDAP - SQL - JWT - MongoDB - CouchDB - Kerberos - IP address - Kerberos (SPNEGO) - REST API
+&#9656; OpenID Connect - SAML - CAS - OAuth - HTTP - LDAP - SQL - JWT - MongoDB - Kerberos - IP address - REST API
 
 2) An [**authorizer**](http://www.pac4j.org/docs/authorizers.html) is meant to check authorizations on the authenticated user profile(s) or on the current web context:
 
@@ -45,7 +45,7 @@ OpenID Connect, JWT...
 
 ## Versions
 
-The latest released version is the [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.pac4j/http4s-pac4j/badge.svg?style=flat)](https://maven-badges.herokuapp.com/maven-central/org.pac4j/http4s-pac4j), available in the [Maven central repository](https://repo.maven.apache.org/maven2).
+The latest released version is the [![Maven Central](https://img.shields.io/maven-central/v/org.pac4j/http4s-pac4j_3.svg)](https://repo1.maven.org/maven2/org/pac4j/http4s-pac4j_3).
 
 See the [release notes](https://github.com/pac4j/http4s-pac4j/wiki/Release-Notes).
 
