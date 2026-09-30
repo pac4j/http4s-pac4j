@@ -2,6 +2,17 @@
   <img src="https://pac4j.github.io/pac4j/img/logo-http4s.png" width="300" />
 </p>
 
+<p align="center">
+  <a href="https://central.sonatype.com/artifact/org.pac4j/http4s-pac4j_3"><img src="https://img.shields.io/maven-central/v/org.pac4j/http4s-pac4j_3?label=Maven%20Central" alt="Maven Central" /></a>
+  <img src="https://img.shields.io/badge/Java-17%2B-blue" alt="Java 17+" />
+  <img src="https://img.shields.io/badge/Scala-2.12%20%7C%202.13%20%7C%203-blue" alt="Scala 2.12 | 2.13 | 3" />
+  <img src="https://img.shields.io/badge/http4s-0.23-blue" alt="http4s 0.23" />
+  <a href="https://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="Apache 2 license" /></a>
+</p>
+
+> `http4s-pac4j` is the http4s implementation of **[pac4j](https://github.com/pac4j/pac4j)**, the security engine for Java.
+> If it is useful to you, please ⭐ **[star pac4j on GitHub](https://github.com/pac4j/pac4j)**: it helps other developers discover it!
+
 The `http4s-pac4j` project is an **easy and powerful security library for http4s web applications and web services** which supports authentication and authorization, but also logout and advanced features like session fixation and CSRF protection.
 It's based on http4s 0.23 and on the **[pac4j security engine](https://github.com/pac4j/pac4j)**. The library is cross-built for Scala 2.12, 2.13 and 3. It's available under the Apache 2 license.
 
