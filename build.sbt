@@ -1,4 +1,5 @@
-crossScalaVersions := Seq("2.12.18", "2.13.12", "3.3.1")
+crossScalaVersions := Seq("2.12.18", "2.13.18", "3.3.1")
+scalaVersion := crossScalaVersions.value.head
 organization := "org.pac4j"
 version      := "5.0.1-SNAPSHOT"
 
@@ -47,7 +48,7 @@ libraryDependencies ++= {
 
 val username = sys.env.get("SONATYPE_USERNAME").getOrElse("")
 val password = sys.env.get("SONATYPE_PASSWORD").getOrElse("")
-credentials += Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", username, password)
+credentials += Credentials("Sonatype Nexus Repository Manager", "central.sonatype.com", username, password)
 
 homepage := Some(url("https://github.com/pac4j/http4s-pac4j"))
 licenses := List("Apache 2" -> new URL("https://www.apache.org/licenses/LICENSE-2.0.txt"))
@@ -68,9 +69,9 @@ developers := List(
 
 pomIncludeRepository := { _ => false }
 publishTo := {
-  val nexus = "https://oss.sonatype.org/"
-  if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
-  else Some("releases" at nexus + "service/local/staging/deploy/maven2")
+  val centralSnapshots = "https://central.sonatype.com/repository/maven-snapshots/"
+  if (isSnapshot.value) Some("central-snapshots" at centralSnapshots)
+  else localStaging.value
 }
 publishMavenStyle := true
 

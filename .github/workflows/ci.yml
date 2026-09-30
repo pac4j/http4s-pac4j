@@ -1,7 +1,7 @@
 name: Java CI
 
 env:
-  JDK_CURRENT: 17.0.10
+  JDK_CURRENT: 17
   DISTRIBUTION: zulu
 
 on:
@@ -19,28 +19,33 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Setup JDK
-        uses: actions/setup-java@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Set up JDK
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6
         with:
           java-version: ${{ env.JDK_CURRENT }}
           distribution: ${{ env.DISTRIBUTION }}
+          cache: sbt
+      - name: Set up sbt
+        uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1.5.11
       - name: Build and test
         run: sbt clean +test
+
   publish:
     if: startsWith(github.ref, 'refs/heads/')
     runs-on: ubuntu-latest
     needs: [test]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Setup JDK
-        uses: actions/setup-java@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Set up JDK
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6
         with:
           java-version: ${{ env.JDK_CURRENT }}
           distribution: ${{ env.DISTRIBUTION }}
-      - name: Publish
+          cache: sbt
+      - name: Set up sbt
+        uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1.5.11
+      - name: Publish to Sonatype
         run: sbt +publish
         env:
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USER }}
