@@ -3,7 +3,7 @@ scalaVersion := crossScalaVersions.value.head
 organization := "org.pac4j"
 version      := "5.0.1-SNAPSHOT"
 
-val circeVersion = "0.14.7"
+val circeVersion = "0.14.16"
 val http4sVersion = "0.23.27"
 val pac4jVersion = "6.5.9"
 val specs2Version = "4.20.3"
