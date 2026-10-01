@@ -10,8 +10,7 @@ import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters._
 import scala.jdk.OptionConverters._
-import cats.effect.std.UUIDGen
-import java.util.Optional
+import java.util.{Optional, UUID}
 
 /** Http4sGenericSessionStore is a generic session implementation with
   * configurable storage
@@ -68,7 +67,7 @@ class Http4sGenericSessionStore[F[_]: Sync](
   }
 
   private def createSessionId(context: Http4sWebContext[F]): String = {
-    val id = dispatcher.unsafeRunSync(UUIDGen[F].randomUUID).toString()
+    val id = UUID.randomUUID().toString
     context.setRequestAttribute(Pac4jConstants.SESSION_ID, id)
 
     val cookie = new Cookie(Pac4jConstants.SESSION_ID, id)
