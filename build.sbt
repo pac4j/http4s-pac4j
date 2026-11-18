@@ -4,7 +4,7 @@ organization := "org.pac4j"
 version      := "5.0.1-SNAPSHOT"
 
 val circeVersion = "0.14.17"
-val http4sVersion = "0.23.38"
+val http4sVersion = "0.23.39"
 val pac4jVersion = "6.6.1"
 val specs2Version = "4.23.0"
 val catsVersion = "2.13.0"
